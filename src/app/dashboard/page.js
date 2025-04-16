@@ -133,8 +133,8 @@ export default function Dashboard() {
         setLoading(false);
         return;
       }
-
-      localStorage.setItem("tailoredResume", aiData.structured);
+      console.log("aiData.structured", aiData.structured);
+      localStorage.setItem("tailoredResume", JSON.stringify(aiData.structured));
 
       toast.success("Uploaded and tailored successfully!");
       setJobText("");
