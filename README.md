@@ -1,3 +1,37 @@
+ AI Resume Tailor – Smart Resume Customization for Job Applications
+AI Resume Tailor is a full-stack web application that intelligently analyzes and customizes resumes based on job descriptions. Built with Next.js (App Router) on the frontend and FastAPI on the backend, this tool streamlines the job application process by aligning your resume with the specific requirements of each job posting using AI (OpenAI GPT-4).
+
+🚀 Key Features
+🔐 Google Authentication (NextAuth)
+
+📄 PDF Resume Upload with 3MB file limit
+
+📤 Resume Validation and text extraction (PyPDF2)
+
+🧠 AI-Powered Tailoring using GPT to generate a personalized resume
+
+✏️ Fully Editable Result Page – modify any section (name, contact, skills, experience, etc.)
+
+💾 Save to Local Storage
+
+📥 Download as Editable Word Document (.docx)
+
+🎨 Modern UI with responsive design and Tailwind CSS
+
+☁️ Firebase Storage + Firestore for file handling and metadata
+
+🛠️ Tech Stack
+Frontend: Next.js 15 App Router, Tailwind CSS, NextAuth
+
+Backend: FastAPI, OpenAI API, PyPDF2
+
+Storage: Firebase (Storage + Firestore)
+
+Document Export: docx, file-saver
+
+📌 Use Case
+Perfect for job seekers who want to tailor their resume to different job descriptions quickly and effectively—boosting their chances of passing ATS filters and standing out to recruiters.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
