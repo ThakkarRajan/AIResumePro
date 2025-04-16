@@ -1,3 +1,4 @@
+// src/app/dashboard/page.js
 "use client";
 
 import { useSession } from "next-auth/react";
@@ -8,6 +9,8 @@ import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { storage, db } from "../../utils/firebase";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
+
+// Your Dashboard component code here (same as you had, it's fine)
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -63,7 +66,7 @@ export default function Dashboard() {
           method: "POST",
           body: formData,
         }
-      );
+      );  
       const data = await res.json();
 
       if (!data.valid) {

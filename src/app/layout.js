@@ -1,18 +1,17 @@
+// src/app/layout.js
+// src/components/NavbarWrapper.js
 "use client";
-import { SessionProvider } from "next-auth/react";
-import { usePathname } from "next/navigation";
-import Navbar from "../components/Navbar";
+
 import "./globals.css";
+import { SessionProvider } from "next-auth/react";
+import NavbarWrapper from "../components/NavbarWrapper";
 
 export default function RootLayout({ children }) {
-  const pathname = usePathname();
-  const showNavbar = pathname !== "/"; // Hide Navbar only on home page
-
   return (
     <html lang="en">
       <body>
         <SessionProvider>
-          {showNavbar && <Navbar />}
+          <NavbarWrapper />
           <main>{children}</main>
         </SessionProvider>
       </body>
