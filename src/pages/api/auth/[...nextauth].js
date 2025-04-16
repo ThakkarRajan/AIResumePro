@@ -1,7 +1,9 @@
+// app/api/auth/[...nextauth]/route.js
+
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-export default NextAuth({
+const handler = NextAuth({
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -10,7 +12,9 @@ export default NextAuth({
   ],
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/", // Optional: custom sign-in page
-    newUser: "/dashboard", // After first login
+    signIn: "/", // Optional: Your custom sign-in page
+    newUser: "/dashboard", // Optional: Redirect after first login
   },
 });
+
+export { handler as GET, handler as POST };
