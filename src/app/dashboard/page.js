@@ -57,10 +57,13 @@ export default function Dashboard() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://localhost:8000/validate-resume", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch(
+        "https://jobdraftai-backend-production.up.railway.app/validate-resume",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
       const data = await res.json();
 
       if (!data.valid) {
@@ -98,24 +101,30 @@ export default function Dashboard() {
         uploadedAt: Timestamp.now(),
       });
 
-      const textRes = await fetch("http://localhost:8000/extract", {
-        method: "POST",
-        body: (() => {
-          const formData = new FormData();
-          formData.append("file", pdfFile);
-          return formData;
-        })(),
-      });
+      const textRes = await fetch(
+        "https://jobdraftai-backend-production.up.railway.app/extract",
+        {
+          method: "POST",
+          body: (() => {
+            const formData = new FormData();
+            formData.append("file", pdfFile);
+            return formData;
+          })(),
+        }
+      );
 
       const { text } = await textRes.json();
 
-      const enhanceRes = await fetch("http://localhost:8000/process-text", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: `Resume:\n${text}\n\nJob Description:\n${jobText}\n\nUsing the job description provided, tailor the resume by enhancing the summary, technical skills, certificates, and experience descriptions to align with the job role.`,
-        }),
-      });
+      const enhanceRes = await fetch(
+        "https://jobdraftai-backend-production.up.railway.app/process-text",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `Resume:\n${text}\n\nJob Description:\n${jobText}\n\nUsing the job description provided, tailor the resume by enhancing the summary, technical skills, certificates, and experience descriptions to align with the job role.`,
+          }),
+        }
+      );
 
       const aiData = await enhanceRes.json();
 
