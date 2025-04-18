@@ -1,5 +1,6 @@
-Job Draft AI – Smart Resume Customization for Job Applications
-Job Draft AI is a full-stack web application that intelligently analyzes and customizes resumes based on job descriptions. Built with Next.js (App Router) on the frontend and FastAPI on the backend, this tool streamlines the job application process by aligning your resume with the specific requirements of each job posting using AI (OpenAI GPT-4).
+AIResumePro – Smart Resume Customization for Job Applications
+
+AIResumePro is a full-stack web application that intelligently analyzes and customizes resumes based on job descriptions. Built with Next.js (App Router) on the frontend and FastAPI on the backend, this tool streamlines the job application process by aligning your resume with the specific requirements of each job posting using AI (OpenAI GPT-4).
 
 🚀 Key Features
 🔐 Google Authentication (NextAuth)

@@ -30,13 +30,13 @@ export default function Home() {
         <div className="flex items-center gap-3 mb-6">
           <Image
             src="/logo.png"
-            alt="Job Draft AI Logo"
+            alt="AIResumePro Logo"
             width={100}
             height={100}
             priority
           />
           <span className="text-3xl sm:text-4xl font-bold text-blue-700">
-            JobDraftAI
+            AIResumePro
           </span>
         </div>
 
@@ -102,7 +102,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="mt-24 text-sm text-gray-400 text-center">
-        © {new Date().getFullYear()} Job Draft AI · Built with ❤️ by Rajan
+        © {new Date().getFullYear()} AI Resume Pro · Built with ❤️ by Rajan
       </footer>
     </div>
   );

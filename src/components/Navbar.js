@@ -17,7 +17,7 @@ export default function Navbar() {
             className="flex items-center gap-2 text-xl font-bold text-blue-700 hover:text-blue-800 transition"
           >
             <Image src="/logo.png" alt="Logo" width={52} height={52} />
-            <span className="hidden sm:inline-block">JobDraftAI</span>
+            <span className="hidden sm:inline-block">AIResumePro</span>
           </Link>
 
           {status === "authenticated" && (
