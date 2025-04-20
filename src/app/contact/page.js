@@ -1,5 +1,29 @@
 // app/contact/page.js
+"use client";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 export default function Contact() {
+  const { data: session, status } = useSession();
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+  }, [status]);
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black text-white">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-lg font-medium">Checking session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return null; // So UI doesn't flash before redirect
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 flex items-center justify-center px-4 py-10">
       <div className="bg-white rounded-3xl shadow-xl p-10 max-w-lg w-full">

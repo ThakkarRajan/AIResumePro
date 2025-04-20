@@ -1,32 +1,91 @@
-// src/app/dashboard/page.js
 "use client";
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  listAll,
+  deleteObject,
+} from "firebase/storage";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { storage, db } from "../../utils/firebase";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
 
-// Your Dashboard component code here (same as you had, it's fine)
-
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-
   const [jobText, setJobText] = useState("");
   const [pdfFile, setPdfFile] = useState(null);
+  const [uploadedResumes, setUploadedResumes] = useState([]);
+  const [selectedResume, setSelectedResume] = useState(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    }
+    if (status === "unauthenticated") router.push("/");
   }, [status]);
+
+  useEffect(() => {
+    if (status === "authenticated") fetchUploadedResumes();
+  }, [status]);
+
+  const fetchUploadedResumes = async () => {
+    try {
+      const result = await listAll(ref(storage, "resumes"));
+      const files = await Promise.all(
+        result.items.map(async (item) => {
+          const url = await getDownloadURL(item);
+          const nameWithoutEmail = item.name.split("-")[0]; // Remove email part
+          return { name: nameWithoutEmail, path: item.fullPath, url };
+        })
+      );
+      setUploadedResumes(files);
+    } catch (err) {
+      toast.error("Failed to list resumes.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedResume) return;
+    try {
+      const fileRef = ref(storage, selectedResume.path);
+      await deleteObject(fileRef);
+      toast.success("Resume deleted.");
+      setSelectedResume(null);
+      fetchUploadedResumes();
+    } catch (err) {
+      toast.error("Failed to delete resume.");
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("File must be less than 3MB.");
+      return;
+    }
+
+    if (file.type !== "application/pdf") {
+      toast.error("Only PDFs are allowed.");
+      return;
+    }
+
+    const existing = uploadedResumes.find((r) => r.name === file.name);
+    if (existing) {
+      toast.error("A file with this name already exists.");
+      return;
+    }
+
+    setPdfFile(file);
+    setSelectedResume(null); // use new file
+  };
 
   const simulateProgress = () => {
     let p = 0;
@@ -40,113 +99,69 @@ export default function Dashboard() {
     }, 200);
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 3 * 1024 * 1024) {
-      toast.error("File size must be less than 3MB.");
-      e.target.value = "";
-      return;
-    }
-
-    if (file.type !== "application/pdf") {
-      toast.error("Only PDF files are allowed.");
-      e.target.value = "";
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch(
-        "https://jobdraftai-backend-production.up.railway.app/validate-resume",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );  
-      const data = await res.json();
-
-      if (!data.valid) {
-        toast.error(data.message || "Invalid resume.");
-        e.target.value = "";
-        return;
-      }
-
-      setPdfFile(file);
-    } catch (err) {
-      toast.error("Resume validation failed.");
-      console.error(err);
-      e.target.value = "";
-    }
-  };
-
   const handleSubmit = async () => {
-    if (!jobText.trim())
-      return toast.error("Please enter the job requirements.");
-    if (!pdfFile) return toast.error("Please attach a PDF resume.");
+    if (!jobText.trim()) return toast.error("Please enter job description.");
+    if (!pdfFile && !selectedResume)
+      return toast.error("Attach or select a resume.");
 
     setLoading(true);
-    setProgress(0);
     simulateProgress();
 
     try {
-      const storageRef = ref(storage, `resumes/${pdfFile.name}-${Date.now()}`);
-      await uploadBytes(storageRef, pdfFile);
-      const downloadURL = await getDownloadURL(storageRef);
+      let fileURL = selectedResume?.url;
+
+      if (pdfFile) {
+        const storageRef = ref(
+          storage,
+          `resumes/${pdfFile.name}-${Date.now()}`
+        );
+        await uploadBytes(storageRef, pdfFile);
+        fileURL = await getDownloadURL(storageRef);
+      }
 
       await addDoc(collection(db, "submissions"), {
         jobText,
-        resumeUrl: downloadURL,
+        resumeUrl: fileURL,
         userEmail: session?.user?.email || "",
         uploadedAt: Timestamp.now(),
       });
 
-      const textRes = await fetch(
+      const extractRes = await fetch(
         "https://jobdraftai-backend-production.up.railway.app/extract",
         {
           method: "POST",
           body: (() => {
-            const formData = new FormData();
-            formData.append("file", pdfFile);
-            return formData;
+            const form = new FormData();
+            if (pdfFile) form.append("file", pdfFile);
+            return form;
           })(),
         }
       );
 
-      const { text } = await textRes.json();
+      const { text } = await extractRes.json();
 
-      const enhanceRes = await fetch(
+      const processRes = await fetch(
         "https://jobdraftai-backend-production.up.railway.app/process-text",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: `Resume:\n${text}\n\nJob Description:\n${jobText}\n\nUsing the job description provided, tailor the resume by enhancing the summary, technical skills, certificates, and experience descriptions to align with the job role.`,
+            text: `Resume:\n${text}\n\nJob Description:\n${jobText}`,
           }),
         }
       );
 
-      const aiData = await enhanceRes.json();
-
-      if (!enhanceRes.ok || !aiData?.structured) {
-        toast.error(aiData?.detail || "AI processing failed.");
+      const aiData = await processRes.json();
+      if (!processRes.ok || !aiData?.structured) {
+        toast.error("AI processing failed.");
         setLoading(false);
         return;
       }
 
       localStorage.setItem("tailoredResume", JSON.stringify(aiData.structured));
-
-      toast.success("Uploaded and tailored successfully!");
-      setJobText("");
-      setPdfFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
       router.push("/result");
     } catch (err) {
-      console.error("Upload error:", err);
-      toast.error("Upload failed. Please try again.");
+      toast.error("Error during submission.");
     } finally {
       setLoading(false);
       setProgress(0);
@@ -155,57 +170,89 @@ export default function Dashboard() {
 
   if (status === "loading") {
     return (
-      <p className="text-center mt-10 text-gray-600 text-lg">Loading...</p>
+      <div className="flex items-center justify-center min-h-screen bg-black text-white">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-lg font-medium">Checking session...</p>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-purple-50 via-pink-100 to-blue-50 py-12 px-4 sm:px-8">
       <Toaster position="top-right" />
-
-      <div
-        className={`transition-all duration-300 ${
-          loading ? "blur-sm pointer-events-none" : ""
-        }`}
-      >
-        <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-3xl px-8 py-10 sm:px-10 sm:py-12">
-          <h1 className="text-4xl font-bold text-center text-purple-700 mb-10">
+      <div className={`transition duration-300 ${loading ? "blur-sm" : ""}`}>
+        <div className="max-w-4xl mx-auto bg-white rounded-3xl px-8 py-10 sm:px-10 sm:py-12 shadow-2xl">
+          <h1 className="text-3xl sm:text-4xl font-bold text-center text-purple-700 mb-8">
             👋 Welcome, {session?.user?.name}
           </h1>
 
-          <div className="mb-8">
-            <label className="block text-gray-700 font-medium mb-2 text-sm sm:text-base">
-              Job Requirements
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">
+              Job Description
             </label>
             <textarea
-              className="w-full h-44 p-4 border border-gray-300 rounded-xl shadow-sm text-base resize-none focus:ring-4 focus:ring-purple-200 focus:outline-none text-black"
-              placeholder="Paste the job requirements here..."
+              className="w-full h-40 p-4 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-purple-300 text-black"
+              placeholder="Paste the job description here..."
               value={jobText}
               onChange={(e) => setJobText(e.target.value)}
             />
           </div>
 
-          <div className="mb-8">
-            <label className="block text-gray-700 font-medium mb-2 text-sm sm:text-base">
-              Attach Resume (PDF only)
+          {uploadedResumes.length > 0 && (
+            <div className="mb-6">
+              <label className="block text-gray-700 font-medium mb-2">
+                Select Existing Resume
+              </label>
+              <select
+                value={selectedResume?.path || ""}
+                onChange={(e) => {
+                  const file = uploadedResumes.find(
+                    (r) => r.path === e.target.value
+                  );
+                  setSelectedResume(file);
+                  setPdfFile(null);
+                }}
+                className="w-full p-2 border rounded-xl bg-white text-gray-700"
+              >
+                <option value="">-- Select a file --</option>
+                {uploadedResumes.map((r) => (
+                  <option key={r.path} value={r.path}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+              {selectedResume && (
+                <div className="mt-2 text-sm text-gray-600 flex justify-between items-center">
+                  <span>Selected: {selectedResume.name}</span>
+                  <button
+                    onClick={handleDelete}
+                    className="text-red-500 hover:underline font-medium ml-4"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">
+              Upload New Resume (PDF)
             </label>
             <input
               ref={fileInputRef}
               type="file"
               accept=".pdf"
               onChange={handleFileChange}
-              className="block w-full text-sm file:bg-purple-100 file:text-purple-700 file:px-4 file:py-2 file:rounded-lg file:font-semibold file:border-0 hover:file:bg-purple-200 text-black"
+              className="w-full file:bg-purple-100 file:text-purple-700 file:px-4 file:py-2 file:rounded-lg hover:file:bg-purple-200 text-sm text-black"
             />
-            {pdfFile && (
-              <p className="mt-2 text-sm text-gray-600">
-                Selected: <span className="font-medium">{pdfFile.name}</span>
-              </p>
-            )}
           </div>
 
           <button
             onClick={handleSubmit}
-            className="w-full bg-purple-600 text-white py-3 text-lg font-semibold rounded-xl shadow-md hover:bg-purple-700 transition-all"
+            className="w-full bg-purple-600 text-white py-3 rounded-xl text-lg font-semibold shadow hover:bg-purple-700 transition"
           >
             🚀 Submit & Tailor Resume
           </button>
@@ -213,7 +260,7 @@ export default function Dashboard() {
       </div>
 
       {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-md z-50 flex flex-col items-center justify-center space-y-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-md z-50 flex flex-col items-center justify-center space-y-6">
           <motion.div
             initial={{ rotate: 0 }}
             animate={{ rotate: 360 }}

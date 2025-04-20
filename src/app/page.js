@@ -14,6 +14,9 @@ export default function Home() {
       router.push("/dashboard");
     }
   }, [status, router]);
+  if (status === "authenticated") {
+    return null;
+  }
 
   if (status === "loading") {
     return (
