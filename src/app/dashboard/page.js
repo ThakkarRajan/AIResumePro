@@ -142,12 +142,14 @@ export default function Dashboard() {
         fileURL = url;
       }
 
-      await addDoc(collection(db, "submissions"), {
+      const email = session?.user?.email?.toLowerCase();
+
+      await addDoc(collection(db, `submissions/${email}/entries`), {
         jobText,
         resumeUrl: fileURL,
-        userEmail: session?.user?.email || "",
         uploadedAt: Timestamp.now(),
       });
+
       // retrieve Data from db
       // import { query, where, getDocs } from "firebase/firestore";
 

@@ -79,45 +79,28 @@ export default function WordDownloadPage() {
         spacing: { after: 100 },
       })
     );
-
-    // Contact Info
-    const contactItems = [];
+    // Clean contact info block
+    const contactParts = [];
 
     if (resumeData.contact?.location)
-      contactItems.push(
-        new TextRun({ text: resumeData.contact.location + " | ", size: 20 })
-      );
-
-    if (resumeData.contact?.email)
-      contactItems.push(
-        new TextRun({ text: resumeData.contact.email + " | ", size: 20 })
-      );
-
+      contactParts.push(resumeData.contact.location);
+    if (resumeData.contact?.email) contactParts.push(resumeData.contact.email);
     if (resumeData.contact?.website)
-      contactItems.push(
-        createHyperlink(resumeData.contact.website, "Website", 20),
-        new TextRun({ text: " | ", size: 20 })
-      );
-
-    if (resumeData.contact?.phone)
-      contactItems.push(
-        new TextRun({ text: resumeData.contact.phone + " | ", size: 20 })
-      );
-
+      contactParts.push(resumeData.contact.website);
+    if (resumeData.contact?.phone) contactParts.push(resumeData.contact.phone);
     if (resumeData.contact?.github)
-      contactItems.push(
-        createHyperlink(resumeData.contact.github, "GitHub", 20),
-        new TextRun({ text: " | ", size: 20 })
-      );
-
+      contactParts.push(resumeData.contact.github);
     if (resumeData.contact?.linkedin)
-      contactItems.push(
-        createHyperlink(resumeData.contact.linkedin, "LinkedIn", 20)
-      );
+      contactParts.push(resumeData.contact.linkedin);
 
     sections.push(
       new Paragraph({
-        children: contactItems,
+        children: [
+          new TextRun({
+            text: contactParts.join(" | "),
+            size: 20,
+          }),
+        ],
         alignment: AlignmentType.CENTER,
         spacing: { after: 200 },
       })
@@ -272,8 +255,8 @@ export default function WordDownloadPage() {
               margin: {
                 top: 567, // 1 cm
                 bottom: 567, // 1 cm
-                left: 1077, // 1.9 cm
-                right: 1077, // 1.9 cm
+                left: 1078, // 1.9 cm
+                right: 1078, // 1.9 cm
                 gutter: 0, // 0 cm
               },
               gutter: 0,
