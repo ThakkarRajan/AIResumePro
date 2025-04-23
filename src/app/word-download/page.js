@@ -12,6 +12,7 @@ import {
   BorderStyle,
   TabStopType,
   TabStopPosition,
+  ExternalHyperlink,
 } from "docx";
 
 export default function WordDownloadPage() {
@@ -32,10 +33,25 @@ export default function WordDownloadPage() {
       setTimeout(() => router.push("/result"), 3000);
     }
   }, [router]);
+  const createHyperlink = (url, displayText, fontSize = 20) => {
+    return (
+      new ExternalHyperlink(),
+      {
+        link: url,
+        children: [
+          new TextRun({
+            text: displayText,
+            style: "Hyperlink",
+            size: fontSize,
+          }),
+        ],
+      }
+    );
+  };
 
   const sectionHeader = (text) => [
     new Paragraph({
-      spacing: { before: 100, after: 0 },
+      spacing: { before: 200, after: 0 },
       border: {
         bottom: {
           style: BorderStyle.SINGLE,
@@ -65,20 +81,43 @@ export default function WordDownloadPage() {
     );
 
     // Contact Info
-    const contactInfo = [
-      resumeData.contact?.location,
-      resumeData.contact?.email,
-      resumeData.contact?.website,
-      resumeData.contact?.phone,
-      resumeData.contact?.github,
-      resumeData.contact?.linkedin,
-    ]
-      .filter(Boolean)
-      .join(" | ");
+    const contactItems = [];
+
+    if (resumeData.contact?.location)
+      contactItems.push(
+        new TextRun({ text: resumeData.contact.location + " | ", size: 20 })
+      );
+
+    if (resumeData.contact?.email)
+      contactItems.push(
+        new TextRun({ text: resumeData.contact.email + " | ", size: 20 })
+      );
+
+    if (resumeData.contact?.website)
+      contactItems.push(
+        createHyperlink(resumeData.contact.website, "Website", 20),
+        new TextRun({ text: " | ", size: 20 })
+      );
+
+    if (resumeData.contact?.phone)
+      contactItems.push(
+        new TextRun({ text: resumeData.contact.phone + " | ", size: 20 })
+      );
+
+    if (resumeData.contact?.github)
+      contactItems.push(
+        createHyperlink(resumeData.contact.github, "GitHub", 20),
+        new TextRun({ text: " | ", size: 20 })
+      );
+
+    if (resumeData.contact?.linkedin)
+      contactItems.push(
+        createHyperlink(resumeData.contact.linkedin, "LinkedIn", 20)
+      );
 
     sections.push(
       new Paragraph({
-        children: [new TextRun({ text: contactInfo, size: 20 })],
+        children: contactItems,
         alignment: AlignmentType.CENTER,
         spacing: { after: 200 },
       })
@@ -231,11 +270,13 @@ export default function WordDownloadPage() {
           properties: {
             page: {
               margin: {
-                top: 720,
-                bottom: 720,
-                left: 720,
-                right: 720,
+                top: 567, // 1 cm
+                bottom: 567, // 1 cm
+                left: 1077, // 1.9 cm
+                right: 1077, // 1.9 cm
+                gutter: 0, // 0 cm
               },
+              gutter: 0,
             },
           },
           children: sections,

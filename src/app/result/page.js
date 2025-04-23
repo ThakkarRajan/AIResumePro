@@ -147,12 +147,68 @@ export default function ResultPage() {
             {Array.isArray(resumeData.tailored_experience) &&
               resumeData.tailored_experience.length > 0 && (
                 <section>
-                  <h2 className="font-semibold text-lg mb-2">💼 Experience:</h2>
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 className="font-semibold text-lg">💼 Experience</h2>
+                    <button
+                      onClick={() =>
+                        setResumeData((prev) => ({
+                          ...prev,
+                          tailored_experience: [
+                            ...(Array.isArray(prev.tailored_experience)
+                              ? prev.tailored_experience
+                              : []),
+                            {
+                              company: "",
+                              title: "",
+                              location: "",
+                              start: "",
+                              end: "",
+                              highlights: ["", "", "", ""],
+                            },
+                          ],
+                        }))
+                      }
+                      className="inline-flex items-center gap-2 bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-md transition-transform duration-300 hover:scale-105"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      <span className="text-sm font-semibold">
+                        Add Experience
+                      </span>
+                    </button>
+                  </div>
+
                   {resumeData.tailored_experience.map((exp, idx) => (
                     <div
                       key={idx}
-                      className="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm space-y-2"
+                      className="relative mb-6 p-4 bg-gray-50 rounded-lg shadow-sm space-y-2"
                     >
+                      <button
+                        onClick={() =>
+                          setResumeData((prev) => {
+                            const updated = [...prev.tailored_experience];
+                            updated.splice(idx, 1);
+                            return { ...prev, tailored_experience: updated };
+                          })
+                        }
+                        className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full hover:bg-red-600 shadow"
+                        title="Remove"
+                      >
+                        ✖
+                      </button>
+
                       {Object.entries(exp).map(([key, val]) => (
                         <div key={key}>
                           <label className="block text-sm font-medium capitalize mb-1">
@@ -200,23 +256,38 @@ export default function ResultPage() {
                   onClick={() =>
                     setResumeData((prev) => ({
                       ...prev,
-                      education: [
-                        ...(Array.isArray(prev.education)
-                          ? prev.education
+                      tailored_experience: [
+                        ...(Array.isArray(prev.tailored_experience)
+                          ? prev.tailored_experience
                           : []),
                         {
-                          program: "",
-                          school: "",
+                          company: "",
+                          title: "",
                           location: "",
                           start: "",
                           end: "",
+                          highlights: ["", "", "", ""],
                         },
                       ],
                     }))
                   }
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-md shadow"
+                  className="inline-flex items-center gap-2 bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-md transition-transform duration-300 hover:scale-105"
                 >
-                  + Add
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  <span className="text-sm font-semibold">Add Experience</span>
                 </button>
               </div>
 
@@ -294,12 +365,68 @@ export default function ResultPage() {
             {Array.isArray(resumeData.projects) &&
               resumeData.projects.length > 0 && (
                 <section>
-                  <h2 className="font-semibold text-lg mb-2">🚀 Projects:</h2>
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 className="font-semibold text-lg">🚀 Projects</h2>
+                    <button
+                      onClick={() =>
+                        setResumeData((prev) => ({
+                          ...prev,
+                          tailored_experience: [
+                            ...(Array.isArray(prev.tailored_experience)
+                              ? prev.tailored_experience
+                              : []),
+                            {
+                              company: "",
+                              title: "",
+                              location: "",
+                              start: "",
+                              end: "",
+                              highlights: ["", "", "", ""],
+                            },
+                          ],
+                        }))
+                      }
+                      className="inline-flex items-center gap-2 bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-md transition-transform duration-300 hover:scale-105"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      <span className="text-sm font-semibold">
+                        Add Experience
+                      </span>
+                    </button>
+                  </div>
+
                   {resumeData.projects.map((proj, idx) => (
                     <div
                       key={idx}
-                      className="mb-4 p-4 bg-gray-50 rounded-lg shadow-sm space-y-2"
+                      className="relative mb-4 p-4 bg-gray-50 rounded-lg shadow-sm space-y-2"
                     >
+                      <button
+                        onClick={() =>
+                          setResumeData((prev) => {
+                            const updated = [...prev.projects];
+                            updated.splice(idx, 1);
+                            return { ...prev, projects: updated };
+                          })
+                        }
+                        className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full hover:bg-red-600 shadow"
+                        title="Remove"
+                      >
+                        ✖
+                      </button>
+
                       {Object.entries(proj).map(([key, val]) => (
                         <div key={key}>
                           <label className="block text-sm font-medium capitalize mb-1">
@@ -331,7 +458,7 @@ export default function ResultPage() {
                 onClick={handleDownload}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all"
               >
-                ⬇️ Download as Word
+                ⬇️ Download as Word Or PDF
               </button>
             </div>
           </div>
