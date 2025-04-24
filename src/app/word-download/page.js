@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { saveAs } from "file-saver";
 import {
@@ -12,7 +13,6 @@ import {
   BorderStyle,
   TabStopType,
   TabStopPosition,
-  ExternalHyperlink,
 } from "docx";
 
 export default function WordDownloadPage() {
@@ -20,8 +20,16 @@ export default function WordDownloadPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
+    if (status === "loading") return;
+
+    if (status === "unauthenticated") {
+      router.push("/");
+      return;
+    }
+
     try {
       const stored = localStorage.getItem("tailoredResume");
       if (!stored) throw new Error("No resume data found.");
@@ -32,22 +40,7 @@ export default function WordDownloadPage() {
       setError("Failed to load resume. Redirecting...");
       setTimeout(() => router.push("/result"), 3000);
     }
-  }, [router]);
-  const createHyperlink = (url, displayText, fontSize = 20) => {
-    return (
-      new ExternalHyperlink(),
-      {
-        link: url,
-        children: [
-          new TextRun({
-            text: displayText,
-            style: "Hyperlink",
-            size: fontSize,
-          }),
-        ],
-      }
-    );
-  };
+  }, [status, router]);
 
   const sectionHeader = (text) => [
     new Paragraph({
@@ -69,7 +62,6 @@ export default function WordDownloadPage() {
 
     const sections = [];
 
-    // Name
     sections.push(
       new Paragraph({
         children: [
@@ -79,9 +71,8 @@ export default function WordDownloadPage() {
         spacing: { after: 100 },
       })
     );
-    // Clean contact info block
-    const contactParts = [];
 
+    const contactParts = [];
     if (resumeData.contact?.location)
       contactParts.push(resumeData.contact.location);
     if (resumeData.contact?.email) contactParts.push(resumeData.contact.email);
@@ -95,18 +86,12 @@ export default function WordDownloadPage() {
 
     sections.push(
       new Paragraph({
-        children: [
-          new TextRun({
-            text: contactParts.join(" | "),
-            size: 20,
-          }),
-        ],
+        children: [new TextRun({ text: contactParts.join(" | "), size: 20 })],
         alignment: AlignmentType.CENTER,
         spacing: { after: 200 },
       })
     );
 
-    // Summary
     sections.push(...sectionHeader("SUMMARY"));
     sections.push(
       new Paragraph({
@@ -116,7 +101,6 @@ export default function WordDownloadPage() {
       })
     );
 
-    // Experience
     sections.push(...sectionHeader("EXPERIENCE"));
     (resumeData.tailored_experience || []).forEach((exp) => {
       sections.push(
@@ -155,7 +139,6 @@ export default function WordDownloadPage() {
       );
     });
 
-    // Skills
     sections.push(...sectionHeader("TECHNICAL SKILLS"));
     Object.entries(resumeData.tailored_skills || {}).forEach(
       ([cat, skills]) => {
@@ -170,7 +153,6 @@ export default function WordDownloadPage() {
       }
     );
 
-    // Projects
     sections.push(...sectionHeader("PROJECTS"));
     (resumeData.projects || []).forEach((proj) => {
       sections.push(
@@ -194,7 +176,6 @@ export default function WordDownloadPage() {
       );
     });
 
-    // Education
     sections.push(...sectionHeader("EDUCATION"));
     const eduArray = Array.isArray(resumeData.education)
       ? resumeData.education
@@ -236,7 +217,6 @@ export default function WordDownloadPage() {
       });
     }
 
-    // Certificates
     sections.push(...sectionHeader("CERTIFICATES"));
     (resumeData.tailored_certificates || []).forEach((cert) => {
       sections.push(
@@ -253,13 +233,12 @@ export default function WordDownloadPage() {
           properties: {
             page: {
               margin: {
-                top: 567, // 1 cm
-                bottom: 567, // 1 cm
-                left: 1078, // 1.9 cm
-                right: 1078, // 1.9 cm
-                gutter: 0, // 0 cm
+                top: 567,
+                bottom: 567,
+                left: 1078,
+                right: 1078,
+                gutter: 0,
               },
-              gutter: 0,
             },
           },
           children: sections,
@@ -271,6 +250,17 @@ export default function WordDownloadPage() {
     saveAs(blob, "tailored_resume.docx");
     setLoading(false);
   };
+
+  if (!resumeData && !error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white text-gray-600">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-lg font-medium">Loading resume...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-purple-100 via-blue-50 to-pink-100 p-6">

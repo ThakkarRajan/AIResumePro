@@ -106,15 +106,18 @@ export default function Dashboard() {
   };
 
   const simulateProgress = () => {
+    const duration = 3000; // 45 seconds
+    const intervalTime = 450; // ~100 steps over 45s
     let p = 0;
+
     const interval = setInterval(() => {
-      p += Math.floor(Math.random() * 10);
+      p += 1;
       if (p >= 100) {
         p = 100;
         clearInterval(interval);
       }
       setProgress(p);
-    }, 200);
+    }, intervalTime);
   };
 
   const handleSubmit = async () => {
@@ -230,6 +233,28 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <p>Checking session...</p>
+      </div>
+    );
+  }
+  // {
+  //   loading && (
+  //     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col items-center justify-center space-y-6">
+  //       <motion.div
+  //         initial={{ rotate: 0 }}
+  //         animate={{ rotate: 360 }}
+  //         transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+  //         className="w-16 h-16 border-8 border-purple-600 border-t-transparent rounded-full"
+  //       />
+  //       <p className="text-white text-lg">Processing... {progress}%</p>
+  //     </div>
+  //   );
+  // }
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex flex-col items-center justify-center text-white">
+        <div className="w-16 h-16 border-8 border-purple-500 border-t-transparent rounded-full animate-spin mb-6" />
+        <p className="text-lg font-medium mb-2">Processing resume with AI...</p>
+        <p className="text-sm text-gray-300">{progress}% complete</p>
       </div>
     );
   }
