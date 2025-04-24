@@ -8,13 +8,41 @@ export default function ResultPage() {
   const [resumeData, setResumeData] = useState(null);
   const [error, setError] = useState("");
   const router = useRouter();
-
   const { data: session, status } = useSession();
+
+  // ✅ Always call hooks before any conditionals
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
+    if (status !== "authenticated") return;
+
+    const stored = localStorage.getItem("tailoredResume");
+    if (!stored) {
+      setError("No resume data found. Redirecting to dashboard...");
+      setTimeout(() => router.push("/dashboard"), 3000);
+      return;
     }
-  }, [status]);
+
+    try {
+      const parsed = JSON.parse(stored);
+      if (!parsed || Object.keys(parsed).length === 0) {
+        setError("Empty resume data. Redirecting to dashboard...");
+        setTimeout(() => router.push("/dashboard"), 3000);
+        return;
+      }
+      setResumeData(parsed);
+    } catch (err) {
+      console.error("Resume parsing error:", err);
+      setError("Resume is corrupted. Redirecting to dashboard...");
+      setTimeout(() => router.push("/dashboard"), 3000);
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (resumeData) {
+      localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
+    }
+  }, [resumeData]);
+
+  // ✅ Rendering logic AFTER hooks
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black text-white">
@@ -27,27 +55,9 @@ export default function ResultPage() {
   }
 
   if (status === "unauthenticated") {
-    return null; // So UI doesn't flash before redirect
+    router.push("/");
+    return null;
   }
-
-  useEffect(() => {
-    if (resumeData) {
-      localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
-    }
-  }, [resumeData]);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("tailoredResume");
-      if (!stored) throw new Error("No resume data found.");
-      const parsed = JSON.parse(stored);
-      setResumeData(parsed);
-    } catch (err) {
-      setError("Failed to load resume. Please try again.");
-      console.error("Result page error:", err);
-    }
-  }, []);
-
   const handleChange = (section, key, value, index) => {
     setResumeData((prev) => {
       const updated = { ...prev };

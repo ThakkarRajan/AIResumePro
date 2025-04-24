@@ -14,6 +14,7 @@ import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { storage, db } from "../../utils/firebase";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
+import { query, where, getDocs, deleteDoc } from "firebase/firestore";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -78,31 +79,25 @@ export default function Dashboard() {
 
   const handleDelete = async (file) => {
     try {
+      // Step 1: Delete from Firebase Storage
       await deleteObject(ref(storage, file.path));
+
+      // Step 2: Find Firestore doc with this file name and delete it
+      const email = session.user.email.toLowerCase();
+      const entriesRef = collection(db, `submissions/${email}/entries`);
+      const q = query(entriesRef, where("fileName", "==", file.name));
+      const snapshot = await getDocs(q);
+
+      const batchDeletes = snapshot.docs.map((doc) => deleteDoc(doc.ref));
+      await Promise.all(batchDeletes);
+
       toast.success("Resume deleted.");
       setSelectedResume(null);
       fetchUploadedResumes();
-    } catch {
+    } catch (error) {
+      console.error("Delete failed:", error);
       toast.error("Failed to delete file.");
     }
-  };
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 3 * 1024 * 1024) {
-      toast.error("Max 3MB PDF only.");
-      return;
-    }
-
-    if (file.type !== "application/pdf") {
-      toast.error("Only PDF files are allowed.");
-      return;
-    }
-
-    setPdfFile(file);
-    setSelectedResume(null);
   };
 
   const simulateProgress = () => {
@@ -151,6 +146,7 @@ export default function Dashboard() {
         jobText,
         resumeUrl: fileURL,
         uploadedAt: Timestamp.now(),
+        fileName: pdfFile ? pdfFile.name : selectedResume.name, // 👈 Save the file name
       });
 
       // retrieve Data from db
@@ -227,6 +223,23 @@ export default function Dashboard() {
       setLoading(false);
       setProgress(0);
     }
+  };
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("Max 3MB PDF only.");
+      return;
+    }
+
+    if (file.type !== "application/pdf") {
+      toast.error("Only PDF files are allowed.");
+      return;
+    }
+
+    setPdfFile(file);
+    setSelectedResume(null);
   };
 
   if (status === "loading") {

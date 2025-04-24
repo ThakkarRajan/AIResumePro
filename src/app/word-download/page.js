@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { saveAs } from "file-saver";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import {
   Document,
   Packer,
@@ -14,17 +15,18 @@ import {
   TabStopType,
   TabStopPosition,
 } from "docx";
+import { TRACE_OUTPUT_VERSION } from "next/dist/shared/lib/constants";
 
 export default function WordDownloadPage() {
   const [resumeData, setResumeData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState("");
   const router = useRouter();
   const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status === "loading") return;
-
     if (status === "unauthenticated") {
       router.push("/");
       return;
@@ -35,30 +37,27 @@ export default function WordDownloadPage() {
       if (!stored) throw new Error("No resume data found.");
       const parsed = JSON.parse(stored);
       setResumeData(parsed);
+      generateAndSetPdf(parsed); // ✅ Add this here
     } catch (err) {
       console.error("Error loading resume from localStorage:", err);
       setError("Failed to load resume. Redirecting...");
       setTimeout(() => router.push("/result"), 3000);
     }
   }, [status, router]);
-
-  const sectionHeader = (text) => [
-    new Paragraph({
-      spacing: { before: 200, after: 0 },
-      border: {
-        bottom: {
-          style: BorderStyle.SINGLE,
-          size: 8,
-          color: "000000",
+  const generateDocx = () => {
+    const sectionHeader = (text) => [
+      new Paragraph({
+        spacing: { before: 200, after: 0 },
+        border: {
+          bottom: {
+            style: BorderStyle.SINGLE,
+            size: 8,
+            color: "000000",
+          },
         },
-      },
-      children: [new TextRun({ text, bold: true, size: 24 })],
-    }),
-  ];
-
-  const handleDownload = async () => {
-    if (!resumeData) return;
-    setLoading(true);
+        children: [new TextRun({ text, bold: true, size: 24 })],
+      }),
+    ];
 
     const sections = [];
 
@@ -155,17 +154,31 @@ export default function WordDownloadPage() {
 
     sections.push(...sectionHeader("PROJECTS"));
     (resumeData.projects || []).forEach((proj) => {
+      // one paragraph with a right-aligned tab stop
       sections.push(
         new Paragraph({
+          tabStops: [
+            { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
+          ],
           children: [
-            new TextRun({ text: proj.title, bold: true, size: 20 }),
+            // left-side: project title
             new TextRun({
-              text: proj.tech?.length ? `   Tech: ${proj.tech.join(", ")}` : "",
+              text: proj.title,
+              bold: true,
+              size: 20,
+            }),
+            // insert a tab then show Tech: ... on the same line
+            new TextRun({
+              text:
+                "\t" +
+                (proj.tech?.length ? `Tech: ${proj.tech.join(", ")}` : ""),
               size: 20,
             }),
           ],
         })
       );
+
+      // then each bullet below it
       proj.highlights?.forEach((hl) =>
         sections.push(
           new Paragraph({
@@ -180,42 +193,34 @@ export default function WordDownloadPage() {
     const eduArray = Array.isArray(resumeData.education)
       ? resumeData.education
       : Object.values(resumeData.education || {});
-    if (eduArray.length === 0) {
-      sections.push(new Paragraph("No education data available."));
-    } else {
-      eduArray.forEach((edu) => {
-        sections.push(
-          new Paragraph({
-            tabStops: [
-              { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
-            ],
-            children: [
-              new TextRun({ text: edu.program, italics: true, size: 20 }),
-              new TextRun({
-                text: `\t${edu.start} – ${edu.end}`,
-                bold: true,
-                size: 20,
-              }),
-            ],
-          })
-        );
-        sections.push(
-          new Paragraph({
-            tabStops: [
-              { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
-            ],
-            children: [
-              new TextRun({ text: edu.school, bold: true, size: 20 }),
-              new TextRun({
-                text: `\t${edu.location}`,
-                italics: true,
-                size: 20,
-              }),
-            ],
-          })
-        );
-      });
-    }
+    eduArray.forEach((edu) => {
+      sections.push(
+        new Paragraph({
+          tabStops: [
+            { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
+          ],
+          children: [
+            new TextRun({ text: edu.program, italics: true, size: 20 }),
+            new TextRun({
+              text: `\t${edu.start} – ${edu.end}`,
+              bold: true,
+              size: 20,
+            }),
+          ],
+        })
+      );
+      sections.push(
+        new Paragraph({
+          tabStops: [
+            { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
+          ],
+          children: [
+            new TextRun({ text: edu.school, bold: true, size: 20 }),
+            new TextRun({ text: `\t${edu.location}`, italics: true, size: 20 }),
+          ],
+        })
+      );
+    });
 
     sections.push(...sectionHeader("CERTIFICATES"));
     (resumeData.tailored_certificates || []).forEach((cert) => {
@@ -233,10 +238,10 @@ export default function WordDownloadPage() {
           properties: {
             page: {
               margin: {
-                top: 567,
-                bottom: 567,
-                left: 1078,
-                right: 1078,
+                top: 567, // 1 cm
+                bottom: 567, // 1 cm
+                left: 1078, // 1.9 cm
+                right: 1078, // 1.9 cm
                 gutter: 0,
               },
             },
@@ -245,10 +250,358 @@ export default function WordDownloadPage() {
         },
       ],
     });
+    return doc;
+  };
+  const generateAndSetPdf = async (data) => {
+    const CM_TO_PT = 28.35;
+    const MARGIN_TOP = CM_TO_PT * 1;
+    const MARGIN_BOTTOM = CM_TO_PT * 1;
+    const MARGIN_LEFT = CM_TO_PT * 1.9;
+    const MARGIN_RIGHT = CM_TO_PT * 1.9;
+    const PAGE_WIDTH = 595.28;
+    const PAGE_HEIGHT = 841.89;
+    const usableWidth = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
+    const LINE_SPACING = 12;
 
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+    const italicFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
+
+    let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    let y = PAGE_HEIGHT - MARGIN_TOP;
+    const newPage = () => {
+      page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      y = PAGE_HEIGHT - MARGIN_TOP;
+    };
+
+    const drawText = (text, opts = {}) => {
+      const {
+        size = 11,
+        bold = false,
+        italics = false,
+        indent = 0,
+        maxWidth = usableWidth,
+        align = "left",
+      } = opts;
+      const textFont = italics ? italicFont : bold ? boldFont : font;
+      const words = text.split(" ");
+      let line = "";
+
+      words.forEach((word, i) => {
+        const testLine = line ? `${line} ${word}` : word;
+        const testWidth = textFont.widthOfTextAtSize(testLine, size);
+
+        if (testWidth > maxWidth) {
+          if (y < MARGIN_BOTTOM + LINE_SPACING) newPage();
+          const lineWidth = textFont.widthOfTextAtSize(line, size);
+          const x0 =
+            align === "center"
+              ? MARGIN_LEFT + (usableWidth - lineWidth) / 2
+              : MARGIN_LEFT + indent;
+          page.drawText(line, {
+            x: x0,
+            y,
+            size,
+            font: textFont,
+            color: rgb(0, 0, 0),
+          });
+          y -= LINE_SPACING;
+          line = word;
+        } else {
+          line = testLine;
+        }
+
+        if (i === words.length - 1) {
+          if (y < MARGIN_BOTTOM + LINE_SPACING) newPage();
+          const lineWidth = textFont.widthOfTextAtSize(line, size);
+          const x0 =
+            align === "center"
+              ? MARGIN_LEFT + (usableWidth - lineWidth) / 2
+              : MARGIN_LEFT + indent;
+          page.drawText(line, {
+            x: x0,
+            y,
+            size,
+            font: textFont,
+            color: rgb(0, 0, 0),
+          });
+          y -= LINE_SPACING;
+        }
+      });
+    };
+
+    const sectionHeader = (title) => {
+      y -= 4;
+      if (y < MARGIN_BOTTOM + LINE_SPACING * 3) newPage();
+      drawText(title, { size: 12, bold: true });
+      page.drawLine({
+        start: { x: MARGIN_LEFT, y: y + 4 },
+        end: { x: PAGE_WIDTH - MARGIN_RIGHT, y: y + 4 },
+        thickness: 1,
+        color: rgb(0, 0, 0),
+      });
+      y -= 8;
+    };
+
+    drawText(data.name || "", { size: 16, bold: true, align: "center" });
+    const contactLine = [
+      data.contact?.location,
+      data.contact?.email,
+      data.contact?.website,
+      data.contact?.phone,
+      data.contact?.github,
+      data.contact?.linkedin,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+    drawText(contactLine, { size: 10, align: "center" });
+
+    sectionHeader("SUMMARY");
+    drawText(data.tailored_summary || "", { size: 11 });
+
+    sectionHeader("EXPERIENCE");
+    (data.tailored_experience || []).forEach((exp) => {
+      drawText(`${exp.company} (${exp.start} – ${exp.end})`, {
+        size: 11,
+        bold: true,
+      });
+      drawText(`${exp.title} — ${exp.location}`, { size: 11, italics: true });
+      exp.highlights.forEach((hl) =>
+        drawText(`•     ${hl}`, { size: 10, indent: 15 })
+      );
+      y -= 4;
+    });
+
+    sectionHeader("TECHNICAL SKILLS");
+    Object.entries(data.tailored_skills || {}).forEach(([cat, skills]) => {
+      drawText(`${cat}: ${skills.join(", ")}`, { size: 11 });
+    });
+
+    sectionHeader("PROJECTS");
+    (data.projects || []).forEach((proj) => {
+      drawText(proj.title + ` | Tech: ${proj.tech.join(", ")}`, {
+        size: 11,
+        bold: true,
+      });
+      proj.highlights?.forEach((hl) =>
+        drawText(`•     ${hl}`, { size: 10, indent: 15 })
+      );
+      y -= 4;
+    });
+
+    sectionHeader("EDUCATION");
+    const eduArray = Array.isArray(data.education)
+      ? data.education
+      : Object.values(data.education || {});
+    eduArray.forEach((edu) => {
+      drawText(`${edu.program} (${edu.start} – ${edu.end})`, {
+        size: 11,
+        bold: true,
+      });
+      drawText(`${edu.school} — ${edu.location}`, { size: 11, italics: true });
+    });
+
+    sectionHeader("CERTIFICATES");
+    (data.tailored_certificates || []).forEach((cert) =>
+      drawText(`•     ${cert}`, { size: 10, indent: 15 })
+    );
+
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+  };
+
+  const handleDownloadWord = async () => {
+    if (!resumeData) return;
+    setLoading(true);
+    const doc = generateDocx();
     const blob = await Packer.toBlob(doc);
     saveAs(blob, "tailored_resume.docx");
     setLoading(false);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!resumeData) return;
+
+    // ── Page & margin setup ──
+    const CM_TO_PT = 28.35;
+    const MARGIN_TOP = CM_TO_PT * 1; // 1 cm
+    const MARGIN_BOTTOM = CM_TO_PT * 1; // 1 cm
+    const MARGIN_LEFT = CM_TO_PT * 1.9; // 1.9 cm
+    const MARGIN_RIGHT = CM_TO_PT * 1.9; // 1.9 cm
+    const PAGE_WIDTH = 595.28; // A4 width in pt
+    const PAGE_HEIGHT = 841.89; // A4 height in pt
+    const usableWidth = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
+    const LINE_SPACING = 12; // 12pt
+
+    // ── Create PDF ──
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+    const italicFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
+
+    let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    let y = PAGE_HEIGHT - MARGIN_TOP;
+
+    const newPage = () => {
+      page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      y = PAGE_HEIGHT - MARGIN_TOP;
+    };
+
+    // ── drawText helper ──
+    const drawText = (text, opts = {}) => {
+      const {
+        size = 11,
+        bold = false,
+        italics = false,
+        indent = 0,
+        maxWidth = usableWidth,
+        align = "left",
+      } = opts;
+      // choose font: italic > bold > regular
+      const textFont = italics ? italicFont : bold ? boldFont : font;
+      const words = text.split(" ");
+      let line = "";
+
+      words.forEach((word, i) => {
+        const testLine = line ? `${line} ${word}` : word;
+        const testWidth = textFont.widthOfTextAtSize(testLine, size);
+
+        if (testWidth > maxWidth) {
+          if (y < MARGIN_BOTTOM + LINE_SPACING) newPage();
+
+          // calculate x for left or center
+          const lineWidth = textFont.widthOfTextAtSize(line, size);
+          const x0 =
+            align === "center"
+              ? MARGIN_LEFT + (usableWidth - lineWidth) / 2
+              : MARGIN_LEFT + indent;
+
+          page.drawText(line, {
+            x: x0,
+            y,
+            size,
+            font: textFont,
+            color: rgb(0, 0, 0),
+          });
+          y -= LINE_SPACING;
+          line = word;
+        } else {
+          line = testLine;
+        }
+
+        // on last word, draw remaining
+        if (i === words.length - 1) {
+          if (y < MARGIN_BOTTOM + LINE_SPACING) newPage();
+          const lineWidth = textFont.widthOfTextAtSize(line, size);
+          const x0 =
+            align === "center"
+              ? MARGIN_LEFT + (usableWidth - lineWidth) / 2
+              : MARGIN_LEFT + indent;
+
+          page.drawText(line, {
+            x: x0,
+            y,
+            size,
+            font: textFont,
+            color: rgb(0, 0, 0),
+          });
+          y -= LINE_SPACING;
+        }
+      });
+    };
+
+    // ── Section header ──
+    const sectionHeader = (title) => {
+      y -= 4;
+      if (y < MARGIN_BOTTOM + LINE_SPACING * 3) newPage();
+      drawText(title, { size: 12, bold: true });
+      page.drawLine({
+        start: { x: MARGIN_LEFT, y: y + 4 },
+        end: { x: PAGE_WIDTH - MARGIN_RIGHT, y: y + 4 },
+        thickness: 1,
+        color: rgb(0, 0, 0),
+      });
+      y -= 8;
+    };
+
+    // ── Draw content ──
+    drawText(resumeData.name || "", { size: 16, bold: true, align: "center" });
+    const contactLine = [
+      resumeData.contact?.location,
+      resumeData.contact?.email,
+      resumeData.contact?.website,
+      resumeData.contact?.phone,
+      resumeData.contact?.github,
+      resumeData.contact?.linkedin,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+    drawText(contactLine, { size: 10, align: "center" });
+
+    sectionHeader("SUMMARY");
+    drawText(resumeData.tailored_summary || "", { size: 11 });
+
+    sectionHeader("EXPERIENCE");
+    (resumeData.tailored_experience || []).forEach((exp) => {
+      drawText(`${exp.company} (${exp.start} – ${exp.end})`, {
+        size: 11,
+        bold: true,
+      });
+      drawText(`${exp.title} — ${exp.location}`, { size: 11, italics: true });
+      exp.highlights.forEach((hl) =>
+        drawText(`•     ${hl}`, { size: 10, indent: 15 })
+      );
+      y -= 4;
+    });
+
+    sectionHeader("TECHNICAL SKILLS");
+    Object.entries(resumeData.tailored_skills || {}, { bold: true }).forEach(
+      ([cat, skills]) => {
+        drawText(`${cat}: ${skills.join(", ")}`, { size: 11 });
+      }
+    );
+
+    sectionHeader("PROJECTS");
+    (resumeData.projects || []).forEach((proj) => {
+      drawText(proj.title + ` | Tech: ${proj.tech.join(", ")}`, {
+        size: 11,
+        bold: true,
+      });
+      // if (proj.tech?.length) {
+      //   drawText(`Tech: ${proj.tech.join(", ")}`, { size: 10, indent: 10 });
+      // }
+      proj.highlights?.forEach((hl) =>
+        drawText(`•     ${hl}`, { size: 10, indent: 15 })
+      );
+      y -= 4;
+    });
+
+    sectionHeader("EDUCATION");
+    const eduArray = Array.isArray(resumeData.education)
+      ? resumeData.education
+      : Object.values(resumeData.education || {});
+    eduArray.forEach((edu) => {
+      drawText(`${edu.program} (${edu.start} – ${edu.end})`, {
+        size: 11,
+        bold: true,
+      });
+      drawText(`${edu.school} — ${edu.location}`, { size: 11, italics: true });
+    });
+
+    sectionHeader("CERTIFICATES");
+    (resumeData.tailored_certificates || []).forEach((cert) =>
+      drawText(`•     ${cert}`, { size: 10, indent: 15 })
+    );
+
+    // ── Save & preview ──
+    const pdfBytes = await pdfDoc.save(); 
+    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+    saveAs(blob, "tailored_resume.pdf");
   };
 
   if (!resumeData && !error) {
@@ -269,23 +622,44 @@ export default function WordDownloadPage() {
           🎉 Your Resume is Ready!
         </h1>
         <p className="text-gray-600 mb-6">
-          Click below to download your AI-tailored resume as a Word document.
+          Click below to download your AI-tailored resume.
         </p>
-        {error ? (
-          <p className="text-red-500 font-medium">{error}</p>
-        ) : (
+
+        {error && <p className="text-red-500 font-medium">{error}</p>}
+
+        <div className="space-y-4">
           <button
-            onClick={handleDownload}
+            onClick={handleDownloadWord}
             disabled={loading}
-            className={`${
+            className={`w-full ${
               loading
                 ? "bg-purple-300 cursor-not-allowed"
                 : "bg-purple-600 hover:bg-purple-700"
             } text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300`}
           >
-            {loading ? "Preparing..." : "⬇️ Download Word Document"}
+            {loading ? "Preparing Word..." : "⬇️ Download Word Document"}
           </button>
-        )}
+
+          <button
+            onClick={handleDownloadPDF}
+            disabled={loading}
+            className={`w-full ${
+              loading
+                ? "bg-blue-300 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300`}
+          >
+            {loading ? "Generating PDF..." : "⬇️ Download PDF Document"}
+          </button>
+
+          {pdfUrl && (
+            <iframe
+              src={pdfUrl}
+              title="PDF Preview"
+              className="w-full h-96 border rounded-xl mt-4"
+            />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -22,6 +22,9 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("tailoredResume"); // ✅ Only remove tailored resume
+    setShowModal(false);
+    setShowMenu(false);
     signOut({ callbackUrl: "/" });
   };
 
@@ -29,7 +32,7 @@ export default function Navbar() {
     <>
       <nav className="w-full px-6 py-4 bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          {/* Left: Logo + Nav Links */}
+          {/* Left Side: Logo & Links */}
           <div className="flex items-center gap-6">
             <Link
               href="/"
@@ -57,13 +60,13 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Right: Profile Dropdown */}
+          {/* Right Side: Profile Button */}
           <div className="relative" ref={menuRef}>
             {status === "authenticated" ? (
               <>
                 <button
                   onClick={() => setShowMenu((prev) => !prev)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition"
                 >
                   Profile
                 </button>
@@ -97,10 +100,10 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Custom Logout Confirmation Modal */}
+      {/* Logout Confirmation Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 bg-opacity-100">
-          <div className="bg-white rounded-xl p-6 shadow-xl w-full max-w-sm bg-opacity-100">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 shadow-xl w-full max-w-sm">
             <h2 className="text-lg font-semibold mb-4 text-black">
               Confirm Logout
             </h2>
