@@ -288,17 +288,16 @@ export default function ResultPage() {
                   onClick={() =>
                     setResumeData((prev) => ({
                       ...prev,
-                      tailored_experience: [
-                        ...(Array.isArray(prev.tailored_experience)
-                          ? prev.tailored_experience
+                      education: [
+                        ...(Array.isArray(prev.education)
+                          ? prev.education
                           : []),
                         {
-                          company: "",
-                          title: "",
+                          program: "",
+                          school: "",
                           location: "",
                           start: "",
                           end: "",
-                          highlights: ["", "", "", ""],
                         },
                       ],
                     }))
@@ -319,7 +318,7 @@ export default function ResultPage() {
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  <span className="text-sm font-semibold">Add Experience</span>
+                  <span className="text-sm font-semibold">Add Education</span>
                 </button>
               </div>
 
@@ -403,17 +402,14 @@ export default function ResultPage() {
                       onClick={() =>
                         setResumeData((prev) => ({
                           ...prev,
-                          tailored_experience: [
-                            ...(Array.isArray(prev.tailored_experience)
-                              ? prev.tailored_experience
+                          projects: [
+                            ...(Array.isArray(prev.projects)
+                              ? prev.projects
                               : []),
                             {
-                              company: "",
                               title: "",
-                              location: "",
-                              start: "",
-                              end: "",
-                              highlights: ["", "", "", ""],
+                              tech: [],
+                              highlights: ["", ""],
                             },
                           ],
                         }))
@@ -435,7 +431,7 @@ export default function ResultPage() {
                         />
                       </svg>
                       <span className="text-sm font-semibold">
-                        Add Experience
+                        Add Projects
                       </span>
                     </button>
                   </div>
