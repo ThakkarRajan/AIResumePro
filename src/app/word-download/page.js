@@ -380,16 +380,20 @@ export default function WordDownloadPage() {
 
     sectionHeader("PROJECTS");
     (data.projects || []).forEach((proj) => {
-      drawText(proj.title + ` | Tech: ${proj.tech.join(", ")}`, {
+      const techArray = Array.isArray(proj.tech)
+        ? proj.tech
+        : (proj.tech || "").split(",").map((t) => t.trim());
+
+      drawText(proj.title + ` | Tech: ${techArray.join(", ")}`, {
         size: 11,
         bold: true,
       });
+
       proj.highlights?.forEach((hl) =>
         drawText(`•     ${hl}`, { size: 10, indent: 15 })
       );
       y -= 4;
     });
-
     sectionHeader("EDUCATION");
     const eduArray = Array.isArray(data.education)
       ? data.education
@@ -565,14 +569,16 @@ export default function WordDownloadPage() {
     );
 
     sectionHeader("PROJECTS");
-    (resumeData.projects || []).forEach((proj) => {
-      drawText(proj.title + ` | Tech: ${proj.tech.join(", ")}`, {
+    (data.projects || []).forEach((proj) => {
+      const techArray = Array.isArray(proj.tech)
+        ? proj.tech
+        : (proj.tech || "").split(",").map((t) => t.trim());
+
+      drawText(proj.title + ` | Tech: ${techArray.join(", ")}`, {
         size: 11,
         bold: true,
       });
-      // if (proj.tech?.length) {
-      //   drawText(`Tech: ${proj.tech.join(", ")}`, { size: 10, indent: 10 });
-      // }
+
       proj.highlights?.forEach((hl) =>
         drawText(`•     ${hl}`, { size: 10, indent: 15 })
       );
@@ -597,7 +603,7 @@ export default function WordDownloadPage() {
     );
 
     // ── Save & preview ──
-    const pdfBytes = await pdfDoc.save(); 
+    const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     setPdfUrl(url);

@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-
+import toast from "react-hot-toast";
+import { useSearchParams } from "next/navigation";
+import { Toaster } from "react-hot-toast";
 export default function ResultPage() {
   const [resumeData, setResumeData] = useState(null);
   const [error, setError] = useState("");
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [showSavePopup, setShowSavePopup] = useState(false);
+  const searchParams = useSearchParams();
 
   // ✅ Always call hooks before any conditionals
   useEffect(() => {
@@ -35,12 +40,29 @@ export default function ResultPage() {
       setTimeout(() => router.push("/dashboard"), 3000);
     }
   }, [status, router]);
-
   useEffect(() => {
-    if (resumeData) {
-      localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
+    const saved = searchParams.get("saved");
+    if (saved === "true") {
+      setShowSavePopup(true);
     }
-  }, [resumeData]);
+  }, [searchParams]);
+
+  // useEffect(() => {
+  //   if (resumeData) {
+  //     localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
+  //   }
+  // }, [resumeData]);
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setShowSavePopup(false);
+    };
+
+    router.events?.on("routeChangeStart", handleRouteChange);
+
+    return () => {
+      router.events?.off("routeChangeStart", handleRouteChange);
+    };
+  }, [router]);
 
   // ✅ Rendering logic AFTER hooks
   if (status === "loading") {
@@ -58,6 +80,111 @@ export default function ResultPage() {
     router.push("/");
     return null;
   }
+  const validateResume = () => {
+    const errors = {};
+    const errorSections = new Set();
+
+    // Experience validation
+    if (Array.isArray(resumeData.tailored_experience)) {
+      resumeData.tailored_experience.forEach((exp, index) => {
+        if (!exp.company) {
+          errors[`experience_company_${index}`] = "Company name is required.";
+          errorSections.add("Experience");
+        }
+        if (!exp.title) {
+          errors[`experience_title_${index}`] = "Job title is required.";
+          errorSections.add("Experience");
+        }
+        if (!exp.location) {
+          errors[`experience_location_${index}`] = "Location is required.";
+          errorSections.add("Experience");
+        }
+        if (!exp.start) {
+          errors[`experience_start_${index}`] = "Start date is required.";
+          errorSections.add("Experience");
+        }
+        if (!exp.end) {
+          errors[`experience_end_${index}`] = "End date is required.";
+          errorSections.add("Experience");
+        }
+        if (!exp.highlights || exp.highlights.some((h) => !h.trim())) {
+          errors[`experience_highlights_${index}`] = "Complete all highlights.";
+          errorSections.add("Experience");
+        }
+      });
+    }
+
+    // Education validation
+    if (Array.isArray(resumeData.education)) {
+      resumeData.education.forEach((edu, index) => {
+        if (!edu.program) {
+          errors[`education_program_${index}`] = "Program name is required.";
+          errorSections.add("Education");
+        }
+        if (!edu.school) {
+          errors[`education_school_${index}`] = "School name is required.";
+          errorSections.add("Education");
+        }
+        if (!edu.location) {
+          errors[`education_location_${index}`] = "Location is required.";
+          errorSections.add("Education");
+        }
+        if (!edu.start) {
+          errors[`education_start_${index}`] = "Start date is required.";
+          errorSections.add("Education");
+        }
+        if (!edu.end) {
+          errors[`education_end_${index}`] = "End date is required.";
+          errorSections.add("Education");
+        }
+      });
+    }
+
+    // Project validation (your existing good logic)
+    if (Array.isArray(resumeData.projects)) {
+      resumeData.projects.forEach((proj, index) => {
+        if (!proj.title) {
+          errors[`project_title_${index}`] = "Project title is required.";
+          errorSections.add("Projects");
+        }
+        if (!proj.tech || proj.tech.length === 0) {
+          errors[`project_tech_${index}`] = "Project tech stack is required.";
+          errorSections.add("Projects");
+        }
+        if (
+          !Array.isArray(proj.highlights) ||
+          proj.highlights.some((h) => !h.trim())
+        ) {
+          errors[`project_highlights_${index}`] =
+            "Complete all project highlights.";
+          errorSections.add("Projects");
+        }
+      });
+    }
+
+    setFieldErrors(errors);
+
+    if (errorSections.size > 0) {
+      toast.error(
+        `Please fix errors in: ${Array.from(errorSections).join(", ")}`,
+        {
+          style: {
+            borderRadius: "10px",
+            background: "#fee2e2",
+            color: "#b91c1c",
+            fontWeight: "bold",
+            fontSize: "16px",
+          },
+          duration: 5000,
+          position: "top-center",
+        }
+      );
+      return false;
+    }
+
+    return true;
+  };
+
   const handleChange = (section, key, value, index) => {
     setResumeData((prev) => {
       const updated = { ...prev };
@@ -87,18 +214,26 @@ export default function ResultPage() {
       return updated;
     });
   };
-
   const handleSave = () => {
+    const valid = validateResume();
+    if (!valid) return;
     localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
-    alert("✅ Resume saved successfully.");
+    setShowSavePopup(true);
   };
 
   const handleDownload = () => {
+    const valid = validateResume();
+    if (!valid) return;
+
+    localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
+
+    // ✅ No popup! Directly go to download page
     router.push("/word-download");
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-100 py-12 px-4 sm:px-6 lg:px-8">
+      <Toaster position="top-center" reverseOrder={false} />
       <div className="max-w-5xl mx-auto bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-10">
         <h1 className="text-3xl font-extrabold text-center text-purple-700 mb-10">
           ✨ Tailored Resume Editor
@@ -249,12 +384,15 @@ export default function ResultPage() {
                           {key === "highlights" ? (
                             <textarea
                               className="w-full border px-4 py-2 rounded-lg"
-                              value={val.join("\n")}
+                              value={Array.isArray(val) ? val.join("\n") : val}
                               onChange={(e) =>
                                 handleChange(
                                   "tailored_experience",
                                   key,
-                                  e.target.value.split("\n"),
+                                  e.target.value
+                                    .split("\n")
+                                    .map((item) => item.trim()) // 🛠 Trim spaces on each line!
+                                    .filter((item) => item.length > 0), // 🛠 Optional: remove empty lines
                                   idx
                                 )
                               }
@@ -273,6 +411,11 @@ export default function ResultPage() {
                               className="w-full border px-4 py-2 rounded-lg"
                               placeholder={key}
                             />
+                          )}
+                          {fieldErrors[`experience_${key}_${idx}`] && (
+                            <p className="text-red-500 text-xs mt-1">
+                              {fieldErrors[`experience_${key}_${idx}`]}
+                            </p>
                           )}
                         </div>
                       ))}
@@ -362,6 +505,11 @@ export default function ResultPage() {
                           className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
                           placeholder={key}
                         />
+                        {fieldErrors[`education_${key}_${idx}`] && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {fieldErrors[`education_${key}_${idx}`]}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -460,14 +608,54 @@ export default function ResultPage() {
                           <label className="block text-sm font-medium capitalize mb-1">
                             {key}
                           </label>
-                          <input
-                            value={Array.isArray(val) ? val.join(", ") : val}
-                            onChange={(e) =>
-                              handleChange("projects", key, e.target.value, idx)
-                            }
-                            className="w-full border px-4 py-2 rounded-lg"
-                            placeholder={key}
-                          />
+                          {key === "highlights" ? (
+                            <input
+                              value={Array.isArray(val) ? val.join(", ") : val}
+                              onChange={(e) =>
+                                handleChange(
+                                  "projects",
+                                  key,
+                                  e.target.value
+                                    .split(",")
+                                    .map((item) => item.trim()),
+                                  idx
+                                )
+                              }
+                              className="w-full border px-4 py-2 rounded-lg"
+                            />
+                          ) : (
+                            <input
+                              value={val}
+                              onChange={(e) =>
+                                handleChange(
+                                  "projects",
+                                  key,
+                                  e.target.value,
+                                  idx
+                                )
+                              }
+                              className="w-full border px-4 py-2 rounded-lg"
+                            />
+                          )}
+
+                          {key === "title" &&
+                            fieldErrors[`project_title_${idx}`] && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {fieldErrors[`project_title_${idx}`]}
+                              </p>
+                            )}
+                          {key === "tech" &&
+                            fieldErrors[`project_tech_${idx}`] && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {fieldErrors[`project_tech_${idx}`]}
+                              </p>
+                            )}
+                          {key === "highlights" &&
+                            fieldErrors[`project_highlights_${idx}`] && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {fieldErrors[`project_highlights_${idx}`]}
+                              </p>
+                            )}
                         </div>
                       ))}
                     </div>
@@ -492,6 +680,24 @@ export default function ResultPage() {
           </div>
         )}
       </div>
+      {showSavePopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-2xl p-8 shadow-xl text-center">
+            <h2 className="text-2xl font-bold mb-4 text-green-600">
+              Resume Saved!
+            </h2>
+            <p className="mb-6 text-gray-700">
+              Your changes were saved successfully.
+            </p>
+            <button
+              onClick={() => setShowSavePopup(false)}
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
