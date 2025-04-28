@@ -171,7 +171,9 @@ export default function WordDownloadPage() {
             new TextRun({
               text:
                 "\t" +
-                (proj.tech?.length ? `Tech: ${proj.tech.join(", ")}` : ""),
+                (Array.isArray(proj.tech)
+                  ? `Tech: ${proj.tech.join(", ")}`
+                  : proj.tech || ""),
               size: 20,
             }),
           ],
@@ -569,7 +571,7 @@ export default function WordDownloadPage() {
     );
 
     sectionHeader("PROJECTS");
-    (data.projects || []).forEach((proj) => {
+    (resumeData.projects || []).forEach((proj) => {
       const techArray = Array.isArray(proj.tech)
         ? proj.tech
         : (proj.tech || "").split(",").map((t) => t.trim());

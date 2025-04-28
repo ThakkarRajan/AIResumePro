@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
-import { useSearchParams } from "next/navigation";
+
 import { Toaster } from "react-hot-toast";
+
 export default function ResultPage() {
   const [resumeData, setResumeData] = useState(null);
   const [error, setError] = useState("");
@@ -13,7 +14,6 @@ export default function ResultPage() {
   const { data: session, status } = useSession();
   const [fieldErrors, setFieldErrors] = useState({});
   const [showSavePopup, setShowSavePopup] = useState(false);
-  const searchParams = useSearchParams();
 
   // ✅ Always call hooks before any conditionals
   useEffect(() => {
@@ -40,12 +40,6 @@ export default function ResultPage() {
       setTimeout(() => router.push("/dashboard"), 3000);
     }
   }, [status, router]);
-  useEffect(() => {
-    const saved = searchParams.get("saved");
-    if (saved === "true") {
-      setShowSavePopup(true);
-    }
-  }, [searchParams]);
 
   // useEffect(() => {
   //   if (resumeData) {
