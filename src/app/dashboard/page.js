@@ -215,7 +215,7 @@ export default function Dashboard() {
       }
 
       localStorage.setItem("tailoredResume", JSON.stringify(aiData.structured));
-      router.push("/result?saved=true");
+      router.push("/result");
     } catch (err) {
       console.error(err);
       toast.error("Submission failed.");
