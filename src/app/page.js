@@ -34,7 +34,7 @@ export default function Home() {
             <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-600 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
           </div>
-          <p className="text-gray-600 text-lg font-medium">Loading AIResumePro...</p>
+          <p className="text-gray-600 text-lg font-medium">Loading I Love Resume...</p>
         </motion.div>
       </div>
     );
@@ -68,7 +68,7 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
               <Image
                 src="/logo.png"
-                alt="AIResumePro Logo"
+                alt="I Love Resume Logo"
                 width={80}
                 height={80}
                 priority
@@ -76,9 +76,14 @@ export default function Home() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                AIResumePro
-              </span>
+              <Image
+                src="/i love resume logo text.png"
+                alt="I Love Resume Logo"
+                width={300}
+                height={80}
+                priority
+                className="h-16 sm:h-20 object-contain"
+              />
               <Sparkles className="w-8 h-8 text-yellow-500 animate-pulse" />
             </div>
           </motion.div>
@@ -258,7 +263,7 @@ export default function Home() {
         >
           <div className="bg-white/40 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg">
             <p className="text-gray-600">
-              © {new Date().getFullYear()} AIResumePro · Built with ❤️ by{" "}
+              © {new Date().getFullYear()} I Love Resume · Built with ❤️ by{" "}
               <span className="font-semibold text-blue-600">Rajan</span>
             </p>
           </div>

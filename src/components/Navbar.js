@@ -84,9 +84,13 @@ export default function Navbar() {
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </motion.div>
               <div className="hidden sm:block">
-                <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  AIResumePro
-                </span>
+                <Image
+                  src="/i love resume logo text.png"
+                  alt="I Love Resume Logo"
+                  width={200}
+                  height={40}
+                  className="h-8 object-contain"
+                />
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <Sparkles className="w-3 h-3" />
                   <span>AI-Powered Resumes</span>

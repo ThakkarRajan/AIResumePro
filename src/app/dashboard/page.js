@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import {
   ref,
   uploadBytes,
@@ -12,7 +13,22 @@ import {
 } from "firebase/storage";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { storage, db } from "../../utils/firebase";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import { 
+  showSuccess, 
+  showError, 
+  showLoading, 
+  dismissToast,
+  showValidationError,
+  showNetworkError,
+  showNetworkRetry,
+  showAIProcessingError,
+  showFormCleared,
+  showFileUploadSuccess,
+  showFileUploadError,
+  showFileDeleteSuccess,
+  showFileDeleteError
+} from "../../utils/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { query, where, getDocs, deleteDoc } from "firebase/firestore";
 import { 
@@ -50,6 +66,8 @@ export default function Dashboard() {
   const [dragActive, setDragActive] = useState(false);
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -103,7 +121,6 @@ export default function Dashboard() {
               url,
             };
           } catch (err) {
-            console.warn("Skipping inaccessible file:", item.fullPath);
             return null;
           }
         })
@@ -111,8 +128,7 @@ export default function Dashboard() {
 
       setUploadedResumes(files.filter(Boolean));
     } catch (error) {
-      console.error("Error fetching resumes:", error);
-      toast.error("Failed to load your resumes.");
+      showError("Failed to load your resumes.");
       setUploadedResumes([]);
     }
   };
@@ -129,13 +145,30 @@ export default function Dashboard() {
       const batchDeletes = snapshot.docs.map((doc) => deleteDoc(doc.ref));
       await Promise.all(batchDeletes);
 
-      toast.success("Resume deleted successfully!");
+      showFileDeleteSuccess();
       setSelectedResume(null);
       fetchUploadedResumes();
     } catch (error) {
-      console.error("Delete failed:", error);
-      toast.error("Failed to delete file.");
+      showFileDeleteError();
     }
+  };
+
+  const confirmDelete = (file) => {
+    setFileToDelete(file);
+    setShowDeleteConfirm(true);
+  };
+
+  const executeDelete = async () => {
+    if (fileToDelete) {
+      await handleDelete(fileToDelete);
+      setShowDeleteConfirm(false);
+      setFileToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setFileToDelete(null);
   };
 
   const simulateProgress = () => {
@@ -154,14 +187,20 @@ export default function Dashboard() {
   };
 
   const handleSubmit = async () => {
-    if (!jobText.trim()) return toast.error("Please enter job description.");
+    if (!jobText.trim()) return showValidationError("Please enter job description.");
     
     // Check for resume input based on mode
     if (uploadMode === "pdf" && !pdfFile && !selectedResume) {
-      return toast.error("Please upload or select a PDF resume.");
+      return showValidationError("Please upload or select a PDF resume.");
     }
     if (uploadMode === "text" && !textResume.trim()) {
-      return toast.error("Please enter your resume text.");
+      return showValidationError("Please enter your resume text.");
+    }
+
+    // Check network connectivity before starting
+    if (!navigator.onLine) {
+      showNetworkError();
+      return;
     }
 
     setLoading(true);
@@ -170,77 +209,211 @@ export default function Dashboard() {
     try {
       let resumeText = "";
       let fileName = "";
+      let fileURL = "";
 
       if (uploadMode === "pdf") {
-        let fileURL = "";
+        // STEP 1: Handle PDF upload to Firebase first (for new files only)
         if (pdfFile) {
           const email = session.user.email.toLowerCase();
           fileName = pdfFile.name;
           const storageRef = ref(storage, `resumes/${email}/${fileName}`);
 
-          await uploadBytes(storageRef, pdfFile);
-          fileURL = await getDownloadURL(storageRef);
+          // Show loading toast for Firebase upload
+          const uploadToast = showLoading('Uploading PDF ...');
+
+          try {
+            // Upload file to Firebase first - this is mandatory for new files
+            await uploadBytes(storageRef, pdfFile);
+            fileURL = await getDownloadURL(storageRef);
+            
+            // Verify the file was uploaded successfully
+            if (!fileURL) {
+              throw new Error("File upload failed. Please try again.");
+            }
+            
+            // Dismiss upload toast and show success
+            dismissToast(uploadToast);
+            showFileUploadSuccess();
+            
+            // Small delay to ensure Firebase upload is complete
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+          } catch (uploadError) {
+            dismissToast(uploadToast);
+            showFileUploadError();
+            setLoading(false);
+            setProgress(0);
+            return;
+          }
         } else if (selectedResume) {
-          const fileRef = ref(storage, selectedResume.path);
-          const url = await getDownloadURL(fileRef);
-          fileURL = url;
-          fileName = selectedResume.name;
+          // For previously uploaded files, just get the URL
+          try {
+            const fileRef = ref(storage, selectedResume.path);
+            const url = await getDownloadURL(fileRef);
+            fileURL = url;
+            fileName = selectedResume.name;
+            
+            // Verify the file URL is accessible
+            if (!fileURL) {
+              throw new Error("Selected file not accessible. Please try again.");
+            }
+          } catch (urlError) {
+            showFileUploadError("Selected file not accessible. Please try again.");
+            setLoading(false);
+            setProgress(0);
+            return;
+          }
         }
 
+        // Only proceed if we have a valid file URL
+        if (!fileURL) {
+          showFileUploadError("No valid file URL. Please try again.");
+          setLoading(false);
+          setProgress(0);
+          return;
+        }
+
+        // STEP 2: Record submission in Firestore
         const email = session?.user?.email?.toLowerCase();
+        try {
+          await addDoc(collection(db, `submissions/${email}/entries`), {
+            jobText,
+            resumeUrl: fileURL,
+            uploadedAt: Timestamp.now(),
+            fileName: fileName,
+          });
+        } catch (firestoreError) {
+          // Continue with processing even if Firestore fails
+        }
 
-        await addDoc(collection(db, `submissions/${email}/entries`), {
-          jobText,
-          resumeUrl: fileURL,
-          uploadedAt: Timestamp.now(),
-          fileName: fileName,
-        });
-
-        // Extract text from PDF with error handling
+        // STEP 3: Extract text from PDF with enhanced error handling
         if (pdfFile) {
+          // Show loading toast for text extraction
+          const extractToast = showLoading('Extracting text from PDF...');
+          
           try {
+            // Check network connectivity first
+            if (!navigator.onLine) {
+              throw new Error("No internet connection. Please check your network.");
+            }
+
+            // Validate file size and type
+            if (pdfFile.size > 10 * 1024 * 1024) { // 10MB limit
+              throw new Error("File size too large. Please upload a PDF under 10MB.");
+            }
+
             const formData = new FormData();
             formData.append("file", pdfFile);
+
+            // Add timeout to prevent hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout for PDF processing
 
             const extractRes = await fetch(
               "https://jobdraftai-backend-production.up.railway.app/extract",
               {
                 method: "POST",
                 body: formData,
+                signal: controller.signal,
               }
             );
 
+            clearTimeout(timeoutId);
+
             if (!extractRes.ok) {
-              throw new Error(`Extract failed: ${extractRes.status}`);
+              throw new Error("Please try again.");
             }
 
-            const json = await extractRes.json();
+        const json = await extractRes.json();
+            
+            if (!json.text || json.text.trim() === '') {
+              throw new Error("No text extracted from PDF. Please ensure the PDF contains readable text.");
+            }
+            
+            // Check if extracted text is too short (likely not a resume)
+            if (json.text.trim().length < 100) {
+              throw new Error("Extracted text is too short. Please ensure the PDF contains a complete resume.");
+            }
+            
             resumeText = json.text;
+            
+            // Validate that the extracted text is actually a resume
+            const resumeKeywords = ["resume", "experience", "skills", "education", "projects", "summary", "work", "employment"];
+            const textLower = json.text.toLowerCase();
+            const keywordMatches = resumeKeywords.filter(keyword => textLower.includes(keyword));
+            
+            if (keywordMatches.length < 2) {
+              throw new Error("The uploaded file doesn't appear to be a resume. Please upload a valid resume PDF.");
+            }
           } catch (extractError) {
-            console.error("PDF extraction failed:", extractError);
-            toast.error("PDF text extraction failed. Please try again or use text input mode.");
+            if (extractError.name === 'AbortError') {
+              showAIProcessingError();
+            } else if (extractError.message.includes('network') || extractError.message.includes('fetch') || extractError.name === 'TypeError') {
+              showNetworkRetry();
+            } else {
+              showAIProcessingError();
+            }
             return;
           }
-        } else if (selectedResume) {
+      } else if (selectedResume) {
+          // Show loading toast for URL extraction
+          const extractToast = showLoading('Extracting text from selected resume...');
+          
           try {
+            // Check network connectivity first
+            if (!navigator.onLine) {
+              throw new Error("No internet connection. Please check your network.");
+            }
+
+            // Add timeout to prevent hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout for URL processing
+
             const extractRes = await fetch(
               "https://jobdraftai-backend-production.up.railway.app/extract-from-url",
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: fileURL }),
+                signal: controller.signal,
               }
             );
 
+            clearTimeout(timeoutId);
+
             if (!extractRes.ok) {
-              throw new Error(`Extract from URL failed: ${extractRes.status}`);
+              throw new Error("Please try again.");
             }
 
-            const json = await extractRes.json();
+        const json = await extractRes.json();
+            
+            if (!json.text || json.text.trim() === '') {
+              throw new Error("No text extracted from resume. Please try a different file.");
+            }
+            
+            // Check if extracted text is too short
+            if (json.text.trim().length < 100) {
+              throw new Error("Extracted text is too short. Please ensure the file contains a complete resume.");
+            }
+            
             resumeText = json.text;
+            
+            // Validate that the extracted text is actually a resume
+            const resumeKeywords = ["resume", "experience", "skills", "education", "projects", "summary", "work", "employment"];
+            const textLower = json.text.toLowerCase();
+            const keywordMatches = resumeKeywords.filter(keyword => textLower.includes(keyword));
+            
+            if (keywordMatches.length < 2) {
+              throw new Error("The uploaded file doesn't appear to be a resume. Please upload a valid resume PDF.");
+            }
           } catch (extractError) {
-            console.error("URL extraction failed:", extractError);
-            toast.error("Resume text extraction failed. Please try again.");
+            if (extractError.name === 'AbortError') {
+              showAIProcessingError();
+            } else if (extractError.message.includes('network') || extractError.message.includes('fetch') || extractError.name === 'TypeError') {
+              showNetworkRetry();
+            } else {
+              showAIProcessingError();
+            }
             return;
           }
         }
@@ -258,10 +431,13 @@ export default function Dashboard() {
         });
       }
 
-      // AI Processing with retry logic
+      // STEP 4: AI Processing with retry logic
       let aiData = null;
       let retryCount = 0;
       const maxRetries = 3;
+      
+      // Show loading toast for AI processing
+      const aiToast = showLoading('AI is analyzing your resume and job description...');
 
       while (retryCount < maxRetries) {
         try {
@@ -277,7 +453,7 @@ export default function Dashboard() {
           );
 
           if (!processRes.ok) {
-            throw new Error(`AI processing failed: ${processRes.status}`);
+            throw new Error("Please try again.");
           }
 
           aiData = await processRes.json();
@@ -286,33 +462,34 @@ export default function Dashboard() {
             throw new Error("Invalid AI response structure");
           }
 
+          // Dismiss AI toast on success
+          dismissToast(aiToast);
           break; // Success, exit retry loop
         } catch (processError) {
           retryCount++;
-          console.error(`AI processing attempt ${retryCount} failed:`, processError);
           
           if (retryCount >= maxRetries) {
-            toast.error("AI processing is temporarily unavailable. Please try again later.");
+            dismissToast(aiToast);
+            showAIProcessingError();
+            setLoading(false);
+            setProgress(0);
             return;
           }
           
           // Wait before retrying (exponential backoff)
           await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          toast.error(`Retrying AI processing... (${retryCount}/${maxRetries})`);
+          showAIProcessingError(retryCount, maxRetries);
         }
       }
 
+      // STEP 5: Save and redirect
       localStorage.setItem("tailoredResume", JSON.stringify(aiData.structured));
       router.push("/result");
     } catch (err) {
-      console.error("Submission error:", err);
-      
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        toast.error("Network error. Please check your connection and try again.");
-      } else if (err.message.includes('AI processing')) {
-        toast.error("AI service is temporarily unavailable. Please try again later.");
+        showNetworkRetry();
       } else {
-        toast.error("An unexpected error occurred. Please try again.");
+        showAIProcessingError();
       }
     } finally {
       setLoading(false);
@@ -325,12 +502,12 @@ export default function Dashboard() {
     if (!file) return;
 
     if (file.size > 3 * 1024 * 1024) {
-      toast.error("Max 3MB PDF only.");
+      showFileUploadError("Max 3MB PDF only.");
       return;
     }
 
     if (file.type !== "application/pdf") {
-      toast.error("Only PDF files are allowed.");
+      showFileUploadError("Only PDF files are allowed.");
       return;
     }
 
@@ -358,9 +535,9 @@ export default function Dashboard() {
       if (file.type === "application/pdf" && file.size <= 3 * 1024 * 1024) {
         setPdfFile(file);
         setSelectedResume(null);
-        toast.success("File uploaded successfully!");
+        showFileUploadSuccess();
       } else {
-        toast.error("Please upload a valid PDF file under 3MB.");
+        showFileUploadError("Please upload a valid PDF file under 3MB.");
       }
     }
   };
@@ -370,7 +547,7 @@ export default function Dashboard() {
     setPdfFile(null);
     setTextResume("");
     setSelectedResume(null);
-    toast.success("Form cleared!");
+    showFormCleared();
   };
 
   const switchUploadMode = (mode) => {
@@ -382,46 +559,185 @@ export default function Dashboard() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Checking session...</p>
-        </motion.div>
-      </div>
+      <>
+        {/* Full Screen Loading Overlay - Covers everything including navbar */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 z-[9999] flex flex-col items-center justify-center">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/10 to-pink-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          </div>
+
+          {/* Loading Content */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-center relative z-10"
+          >
+            {/* Logo and Brand */}
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center justify-center gap-4 mb-8"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
+                <Image
+                  src="/logo.png"
+                  alt="I Love Resume Logo"
+                  width={80}
+                  height={80}
+                  priority
+                  className="relative z-10 rounded-2xl"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/i love resume logo text.png"
+                  alt="I Love Resume Logo"
+                  width={300}
+                  height={80}
+                  priority
+                  className="h-16 sm:h-20 object-contain"
+                />
+                <Sparkles className="w-8 h-8 text-yellow-500 animate-pulse" />
+              </div>
+            </motion.div>
+
+            {/* Loading Spinner */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="relative w-24 h-24 mb-6"
+            >
+              <div className="w-24 h-24 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-purple-400 animate-pulse" />
+              </div>
+            </motion.div>
+
+            {/* Loading Text */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <p className="text-gray-600 font-medium text-lg">Checking session...</p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </>
     );
   }
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
-        >
-          <div className="relative w-24 h-24 mb-6">
-            <div className="w-24 h-24 border-4 border-purple-200/20 border-t-purple-500 rounded-full animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-purple-400 animate-pulse" />
-            </div>
+      <>
+        {/* Full Screen Loading Overlay - Covers everything including navbar */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 z-[9999] flex flex-col items-center justify-center">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/10 to-pink-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
           </div>
-          <h3 className="text-xl font-semibold mb-2">AI is crafting your resume...</h3>
-          <p className="text-gray-300 mb-4">This may take a few moments</p>
-          <div className="w-64 bg-gray-700 rounded-full h-2 mb-2">
+
+          {/* Loading Content */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-center relative z-10"
+          >
+            {/* Logo and Brand */}
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center justify-center gap-4 mb-8"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
+                <Image
+                  src="/logo.png"
+                  alt="I Love Resume Logo"
+                  width={80}
+                  height={80}
+                  priority
+                  className="relative z-10 rounded-2xl"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/i love resume logo text.png"
+                  alt="I Love Resume Logo"
+                  width={300}
+                  height={80}
+                  priority
+                  className="h-16 sm:h-20 object-contain"
+                />
+                <Sparkles className="w-8 h-8 text-yellow-500 animate-pulse" />
+              </div>
+            </motion.div>
+
+            {/* Loading Spinner */}
             <motion.div
-              className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-          <p className="text-sm text-gray-400">{progress}% complete</p>
-        </motion.div>
-      </div>
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="relative w-32 h-32 mb-8"
+            >
+              <div className="w-32 h-32 border-4 border-purple-200/20 border-t-purple-500 rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles className="w-12 h-12 text-purple-400 animate-pulse" />
+              </div>
+            </motion.div>
+
+            {/* Loading Text */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="space-y-4"
+            >
+              <h3 className="text-2xl font-semibold text-gray-800 mb-2">AI is crafting your resume...</h3>
+              <p className="text-gray-600 text-lg mb-6">This may take a few moments</p>
+              
+              {/* Progress Bar */}
+              <div className="w-80 bg-gray-200 rounded-full h-3 mb-3 justify-center align-center">
+                <motion.div
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+              <p className="text-sm text-gray-500 font-medium">{progress}% complete</p>
+            </motion.div>
+
+            {/* Loading Steps */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="mt-8 flex items-center justify-center gap-6 text-sm text-gray-500"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Uploading Pdf/Text</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progress > 30 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <span>Extracting Text</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${progress > 70 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <span>AI Processing</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </>
     );
   }
 
@@ -482,7 +798,7 @@ export default function Dashboard() {
           </div>
           <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
             Welcome back, {session?.user?.name}!
-          </h1>
+        </h1>
           <p className="text-gray-600 text-xl">Let's create your perfect resume</p>
           
           {/* Quick Stats */}
@@ -553,14 +869,14 @@ export default function Dashboard() {
                   <X className="w-5 h-5" />
                 </motion.button>
               </div>
-              
-              <textarea
+
+        <textarea
                 className="w-full h-48 p-6 border border-gray-200 rounded-2xl text-gray-900 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-lg"
                 placeholder="Copy and paste the job description, requirements, and responsibilities here..."
-                value={jobText}
-                onChange={(e) => setJobText(e.target.value)}
-              />
-              
+          value={jobText}
+          onChange={(e) => setJobText(e.target.value)}
+        />
+
               {jobText && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -621,8 +937,8 @@ export default function Dashboard() {
                     <Type className="w-4 h-4" />
                     Text Input
                   </motion.button>
-                </div>
-              </div>
+            </div>
+        </div>
 
               {/* PDF Upload Mode */}
               <AnimatePresence mode="wait">
@@ -645,11 +961,11 @@ export default function Dashboard() {
                       onDragOver={handleDrag}
                       onDrop={handleDrop}
                     >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf"
-                        onChange={handleFileChange}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            onChange={handleFileChange}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
                       
@@ -696,8 +1012,8 @@ export default function Dashboard() {
                         <p className="font-medium text-purple-900">Text Resume Input</p>
                         <p className="text-sm text-purple-700">Type or paste your resume content directly</p>
                       </div>
-                    </div>
-                    
+        </div>
+
                     <textarea
                       className="w-full h-64 p-6 border border-gray-200 rounded-2xl text-gray-900 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-lg"
                       placeholder="Enter your resume content here... Include your experience, skills, education, and any other relevant information..."
@@ -792,17 +1108,17 @@ export default function Dashboard() {
                           >
                             <Download className="w-4 h-4" />
                           </button>
-                          <button
+        <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(resume);
+                              confirmDelete(resume);
                             }}
                             className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                             title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+        </button>
+      </div>
                       </div>
                     </motion.div>
                   ))}
@@ -831,7 +1147,7 @@ export default function Dashboard() {
               </motion.button>
               
               {(!jobText.trim() || (uploadMode === "pdf" && !pdfFile && !selectedResume) || (uploadMode === "text" && !textResume.trim())) && (
-                <motion.div
+          <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl"
@@ -853,6 +1169,56 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Delete Resume
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete "{fileToDelete?.name}"? This action cannot be undone.
+                </p>
+                
+                <div className="flex gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={cancelDelete}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={executeDelete}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

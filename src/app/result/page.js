@@ -3,7 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import { 
+  showSuccess, 
+  showError, 
+  showLoading, 
+  dismissToast,
+  showSaveLoading,
+  showSaveSuccess,
+  showSaveError,
+  showDownloadLoading,
+  showDownloadSuccess,
+  showDownloadError,
+  showHighlightAdded
+} from "../../utils/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User,
@@ -31,6 +44,96 @@ import {
   Star
 } from "lucide-react";
 
+// Highlights Editor Component
+const HighlightsEditor = ({ highlights = [], onChange, placeholder = "Enter highlights..." }) => {
+  const [inputValue, setInputValue] = useState("");
+  
+  // Ensure highlights is always an array
+  const safeHighlights = Array.isArray(highlights) ? highlights : [];
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && inputValue.trim()) {
+      e.preventDefault();
+      const newHighlights = [...safeHighlights, inputValue.trim()];
+      onChange(newHighlights);
+      setInputValue("");
+      // Show a subtle success indicator
+      const isCertificate = placeholder.toLowerCase().includes('certificate');
+      showHighlightAdded(isCertificate);
+    }
+  };
+
+  const handleRemoveHighlight = (index) => {
+    const newHighlights = safeHighlights.filter((_, i) => i !== index);
+    onChange(newHighlights);
+  };
+
+  const handleEditHighlight = (index, newValue) => {
+    const newHighlights = [...safeHighlights];
+    newHighlights[index] = newValue;
+    onChange(newHighlights);
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Input for adding new highlights */}
+      <div className="relative">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder={`${placeholder} (Press Enter to add)`}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+        />
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 bg-white px-2">
+          Enter
+        </div>
+      </div>
+
+      {/* Display existing highlights */}
+      <div className="space-y-2">
+        {safeHighlights.map((highlight, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex items-center gap-3 group"
+          >
+            <div className="flex-shrink-0 w-2 h-2 bg-purple-500 rounded-full mt-1"></div>
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={highlight}
+                onChange={(e) => handleEditHighlight(index, e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 text-sm"
+                placeholder="Edit highlight..."
+              />
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => handleRemoveHighlight(index)}
+              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100"
+              title="Remove highlight"
+            >
+              <X className="w-4 h-4" />
+            </motion.button>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      {safeHighlights.length === 0 && (
+        <div className="text-center py-4 text-gray-500 text-sm">
+          No highlights added yet. Start typing above and press Enter to add your first highlight.
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function ResultPage() {
   const [resumeData, setResumeData] = useState(null);
   const [error, setError] = useState("");
@@ -39,6 +142,8 @@ export default function ResultPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [showSavePopup, setShowSavePopup] = useState(false);
   const [activeSection, setActiveSection] = useState("personal");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // ✅ Always call hooks before any conditionals
   useEffect(() => {
@@ -219,11 +324,11 @@ export default function ResultPage() {
         section === "projects"
       ) {
         updated[section][index][key] = value;
-      } else if (
-        section === "tailored_skills" ||
-        section === "tailored_certificates"
-      ) {
+      } else if (section === "tailored_skills") {
         updated[section][key] = value.split(",").map((s) => s.trim());
+      } else if (section === "tailored_certificates") {
+        // Handle certificates as array directly from HighlightsEditor
+        updated[section] = value;
       } else {
         updated[section] = value;
       }
@@ -239,19 +344,65 @@ export default function ResultPage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const valid = validateResume();
     if (!valid) return;
-    localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
-    setShowSavePopup(true);
+
+    setIsSaving(true);
+    
+    try {
+      // Show loading toast
+      const loadingToast = showSaveLoading();
+
+      // Save data to localStorage
+      localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
+      
+      // Simulate a small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Dismiss loading toast
+      dismissToast(loadingToast);
+      
+      // Show success popup
+      setShowSavePopup(true);
+    } catch (error) {
+      console.error('Save error:', error);
+      showSaveError();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const valid = validateResume();
     if (!valid) return;
 
-    localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
-    router.push("/word-download");
+    setIsDownloading(true);
+    
+    try {
+      // Show loading toast
+      const loadingToast = showDownloadLoading();
+
+      // Save data to localStorage
+      localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
+      
+      // Simulate a small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Dismiss loading toast
+      dismissToast(loadingToast);
+      
+      // Show success toast
+      showDownloadSuccess();
+      
+      // Navigate to download page
+      router.push("/word-download");
+    } catch (error) {
+      console.error('Download error:', error);
+      showDownloadError();
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const getContactIcon = (key) => {
@@ -285,7 +436,7 @@ export default function ResultPage() {
       </div>
 
       <Toaster 
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 4000,
           style: {
@@ -372,23 +523,51 @@ export default function ResultPage() {
                 {/* Action Buttons */}
                 <div className="mt-8 space-y-3">
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: (isSaving || isDownloading) ? 1 : 1.02 }}
+                    whileTap={{ scale: (isSaving || isDownloading) ? 1 : 0.98 }}
                     onClick={handleSave}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+                    disabled={isSaving || isDownloading}
+                    className={`w-full font-semibold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                      isSaving
+                        ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white cursor-not-allowed opacity-75'
+                        : (isDownloading ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-xl')
+                    }`}
                   >
-                    <Save className="w-5 h-5" />
-                    Save Resume
+                    {isSaving ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-5 h-5" />
+                        Save Resume
+                      </>
+                    )}
                   </motion.button>
                   
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: (isDownloading || isSaving) ? 1 : 1.02 }}
+                    whileTap={{ scale: (isDownloading || isSaving) ? 1 : 0.98 }}
                     onClick={handleDownload}
-                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+                    disabled={isDownloading || isSaving}
+                    className={`w-full font-semibold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                      isDownloading
+                        ? 'bg-gradient-to-r from-blue-400 to-indigo-500 text-white cursor-not-allowed opacity-75'
+                        : (isSaving ? 'bg-gradient-to-r from-blue-400 to-indigo-500 text-white cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-xl')
+                    }`}
                   >
-                    <Download className="w-5 h-5" />
-                    Download
+                    {isDownloading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Preparing...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-5 h-5" />
+                        Download
+                      </>
+                    )}
                   </motion.button>
                 </div>
               </div>
@@ -606,22 +785,17 @@ export default function ResultPage() {
                             {key}
                           </label>
                           {key === "highlights" ? (
-                            <textarea
-                                                                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
-                                         rows={4}
-                              value={Array.isArray(val) ? val.join("\n") : val}
-                              onChange={(e) =>
+                            <HighlightsEditor
+                              highlights={val}
+                              onChange={(newHighlights) =>
                                 handleChange(
                                   "tailored_experience",
                                   key,
-                                  e.target.value
-                                    .split("\n")
-                                              .map((item) => item.trim())
-                                              .filter((item) => item.length > 0),
+                                  newHighlights,
                                   idx
                                 )
                               }
-                                        placeholder="Enter job highlights (one per line)"
+                              placeholder="Enter job highlights (one per line)"
                             />
                           ) : (
                             <input
@@ -724,21 +898,16 @@ export default function ResultPage() {
                           {key}
                         </label>
                                     {key === "highlights" ? (
-                                      <textarea
-                                        value={Array.isArray(val) ? val.join("\n") : val}
-                          onChange={(e) =>
-                            handleInputChange(
-                              "education",
-                              idx,
-                              key,
-                              e.target.value
-                                              .split("\n")
-                                              .map((item) => item.trim())
-                                              .filter((item) => item.length > 0)
-                            )
-                          }
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
-                                        rows={4}
+                                      <HighlightsEditor
+                                        highlights={val}
+                                        onChange={(newHighlights) =>
+                                          handleInputChange(
+                                            "education",
+                                            idx,
+                                            key,
+                                            newHighlights
+                                          )
+                                        }
                                         placeholder="Enter education highlights/achievements (one per line)"
                                       />
                                     ) : (
@@ -839,24 +1008,19 @@ export default function ResultPage() {
                             {key}
                           </label>
                           {key === "highlights" ? (
-                                      <textarea
-                                        value={Array.isArray(val) ? val.join("\n") : val}
-                              onChange={(e) =>
-                                handleChange(
-                                  "projects",
-                                  key,
-                                  e.target.value
-                                              .split("\n")
-                                              .map((item) => item.trim())
-                                              .filter((item) => item.length > 0),
-                                  idx
-                                )
-                              }
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
-                                        rows={4}
+                                      <HighlightsEditor
+                                        highlights={val}
+                                        onChange={(newHighlights) =>
+                                          handleChange(
+                                            "projects",
+                                            key,
+                                            newHighlights,
+                                            idx
+                                          )
+                                        }
                                         placeholder="Enter project highlights (one per line)"
-                            />
-                          ) : (
+                                      />
+                                    ) : (
                             <input
                               value={val}
                               onChange={(e) =>
@@ -899,23 +1063,18 @@ export default function ResultPage() {
                         </div>
                       </div>
 
-                      {Array.isArray(resumeData.tailored_certificates) &&
-                        resumeData.tailored_certificates.length > 0 && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Certificates
-                            </label>
-                            <textarea
-                              value={resumeData.tailored_certificates.join("\n")}
-                              onChange={(e) =>
-                                handleChange("tailored_certificates", "certs", e.target.value)
-                              }
-                              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
-                              rows={6}
-                              placeholder="Enter your certificates (one per line)"
-                            />
-                          </div>
-                        )}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Certificates
+                        </label>
+                        <HighlightsEditor
+                          highlights={resumeData.tailored_certificates || []}
+                          onChange={(newCertificates) =>
+                            handleChange("tailored_certificates", null, newCertificates)
+                          }
+                          placeholder="Enter your certificates"
+                        />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
