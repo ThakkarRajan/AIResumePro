@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [showFilePreview, setShowFilePreview] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -58,6 +59,23 @@ export default function Dashboard() {
   useEffect(() => {
     if (status === "authenticated") fetchUploadedResumes();
   }, [status]);
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Check initial status
+    setIsOnline(navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const fetchUploadedResumes = async () => {
     if (!session?.user?.email) return;
@@ -178,33 +196,53 @@ export default function Dashboard() {
           fileName: fileName,
         });
 
-        // Extract text from PDF
+        // Extract text from PDF with error handling
         if (pdfFile) {
-          const formData = new FormData();
-          formData.append("file", pdfFile);
+          try {
+            const formData = new FormData();
+            formData.append("file", pdfFile);
 
-          const extractRes = await fetch(
-            "https://jobdraftai-backend-production.up.railway.app/extract",
-            {
-              method: "POST",
-              body: formData,
+            const extractRes = await fetch(
+              "https://jobdraftai-backend-production.up.railway.app/extract",
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+
+            if (!extractRes.ok) {
+              throw new Error(`Extract failed: ${extractRes.status}`);
             }
-          );
 
-          const json = await extractRes.json();
-          resumeText = json.text;
+            const json = await extractRes.json();
+            resumeText = json.text;
+          } catch (extractError) {
+            console.error("PDF extraction failed:", extractError);
+            toast.error("PDF text extraction failed. Please try again or use text input mode.");
+            return;
+          }
         } else if (selectedResume) {
-          const extractRes = await fetch(
-            "https://jobdraftai-backend-production.up.railway.app/extract-from-url",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ url: fileURL }),
-            }
-          );
+          try {
+            const extractRes = await fetch(
+              "https://jobdraftai-backend-production.up.railway.app/extract-from-url",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: fileURL }),
+              }
+            );
 
-          const json = await extractRes.json();
-          resumeText = json.text;
+            if (!extractRes.ok) {
+              throw new Error(`Extract from URL failed: ${extractRes.status}`);
+            }
+
+            const json = await extractRes.json();
+            resumeText = json.text;
+          } catch (extractError) {
+            console.error("URL extraction failed:", extractError);
+            toast.error("Resume text extraction failed. Please try again.");
+            return;
+          }
         }
       } else {
         // Text resume mode
@@ -220,28 +258,62 @@ export default function Dashboard() {
         });
       }
 
-      const processRes = await fetch(
-        "https://jobdraftai-backend-production.up.railway.app/process-text",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: `Resume:\n${resumeText}\n\nJob Description:\n${jobText}`,
-          }),
-        }
-      );
+      // AI Processing with retry logic
+      let aiData = null;
+      let retryCount = 0;
+      const maxRetries = 3;
 
-      const aiData = await processRes.json();
-      if (!processRes.ok || !aiData?.structured) {
-        toast.error("AI processing failed.");
-        return;
+      while (retryCount < maxRetries) {
+        try {
+          const processRes = await fetch(
+            "https://jobdraftai-backend-production.up.railway.app/process-text",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text: `Resume:\n${resumeText}\n\nJob Description:\n${jobText}`,
+              }),
+            }
+          );
+
+          if (!processRes.ok) {
+            throw new Error(`AI processing failed: ${processRes.status}`);
+          }
+
+          aiData = await processRes.json();
+          
+          if (!aiData?.structured) {
+            throw new Error("Invalid AI response structure");
+          }
+
+          break; // Success, exit retry loop
+        } catch (processError) {
+          retryCount++;
+          console.error(`AI processing attempt ${retryCount} failed:`, processError);
+          
+          if (retryCount >= maxRetries) {
+            toast.error("AI processing is temporarily unavailable. Please try again later.");
+            return;
+          }
+          
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          toast.error(`Retrying AI processing... (${retryCount}/${maxRetries})`);
+        }
       }
 
       localStorage.setItem("tailoredResume", JSON.stringify(aiData.structured));
       router.push("/result");
     } catch (err) {
-      console.error(err);
-      toast.error("Submission failed.");
+      console.error("Submission error:", err);
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        toast.error("Network error. Please check your connection and try again.");
+      } else if (err.message.includes('AI processing')) {
+        toast.error("AI service is temporarily unavailable. Please try again later.");
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
       setProgress(0);
@@ -382,6 +454,23 @@ export default function Dashboard() {
       </motion.button>
       
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Network Status Warning */}
+        {!isOnline && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <div>
+                <p className="text-red-800 font-medium">You're currently offline</p>
+                <p className="text-red-700 text-sm">Please check your internet connection to use AI features</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -415,6 +504,21 @@ export default function Dashboard() {
             >
               <Zap className="w-4 h-4 text-purple-600" />
               <span className="text-sm font-medium text-gray-700">AI Powered</span>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-sm ${
+                isOnline 
+                  ? 'bg-green-50 text-green-700' 
+                  : 'bg-red-50 text-red-700'
+              }`}
+            >
+              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm font-medium">
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
             </motion.div>
           </div>
         </motion.div>
