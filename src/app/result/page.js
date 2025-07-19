@@ -186,19 +186,19 @@ export default function ResultPage() {
   // ✅ Rendering logic AFTER hooks
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="relative w-20 h-20 mb-6">
-            <div className="w-20 h-20 border-4 border-purple-200/20 border-t-purple-500 rounded-full animate-spin" />
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-4 sm:mb-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-purple-200/20 border-t-purple-500 rounded-full animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-purple-400 animate-pulse" />
+              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 animate-pulse" />
             </div>
         </div>
-          <p className="text-gray-600 font-medium text-lg">Loading your resume...</p>
+          <p className="text-gray-600 font-medium text-base sm:text-lg">Loading your resume...</p>
         </motion.div>
       </div>
     );

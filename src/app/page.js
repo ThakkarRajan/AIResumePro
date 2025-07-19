@@ -62,29 +62,29 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="flex items-center gap-4 mb-8"
+            className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-6 sm:mb-8"
           >
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
               <Image
                 src="/logo.png"
                 alt="I Love Resume Logo"
-                width={80}
-                height={80}
+                width={60}
+                height={60}
                 priority
-                className="relative z-10 rounded-2xl"
+                className="relative z-10 rounded-2xl sm:w-20 sm:h-20"
               />
             </div>
             <div className="flex items-center gap-2">
               <Image
-                src="/i love resume logo text.png"
+                src="/Iloveresumelogotext.png"
                 alt="I Love Resume Logo"
-                width={300}
-                height={80}
+                width={200}
+                height={60}
                 priority
-                className="h-16 sm:h-20 object-contain"
+                className="h-12 sm:h-16 md:h-20 object-contain"
               />
-              <Sparkles className="w-8 h-8 text-yellow-500 animate-pulse" />
+              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 animate-pulse" />
             </div>
           </motion.div>
 
@@ -93,7 +93,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-800 mb-6 leading-tight"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight px-4"
           >
             Build Smarter Resumes{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
@@ -106,7 +106,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="text-gray-600 text-lg sm:text-xl mb-12 max-w-2xl leading-relaxed"
+            className="text-gray-600 text-base sm:text-lg md:text-xl mb-8 sm:mb-12 max-w-2xl leading-relaxed px-4"
           >
             Transform your resume with AI-powered insights. Get personalized suggestions, 
             optimize structure, and align keywords with job descriptions—all in seconds.
@@ -120,18 +120,18 @@ export default function Home() {
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="group flex items-center gap-3 bg-white/80 backdrop-blur-sm text-gray-800 px-8 py-4 rounded-2xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 font-semibold text-lg relative overflow-hidden"
+            className="group flex items-center gap-2 sm:gap-3 bg-white/80 backdrop-blur-sm text-gray-800 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 font-semibold text-base sm:text-lg relative overflow-hidden w-full max-w-sm sm:w-auto"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <Image
               src="/google-logo.svg"
               alt="Google logo"
-              width={24}
-              height={24}
-              className="relative z-10"
+              width={20}
+              height={20}
+              className="relative z-10 sm:w-6 sm:h-6"
             />
             <span className="relative z-10">Continue with Google</span>
-            <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
           </motion.button>
 
           {/* Trust Indicators */}
@@ -139,19 +139,19 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.8 }}
-            className="flex items-center gap-6 mt-8 text-sm text-gray-500"
+            className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-gray-500 px-4"
           >
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-green-500" />
+              <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
               <span>Secure & Private</span>
             </div>
             <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-yellow-500" />
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
               <span>AI-Powered</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-500" />
-              <span>Trusted by 10K+ Users</span>
+              <Users className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" />
+              <span>Trusted by 10+ Users</span>
             </div>
           </motion.div>
         </motion.div>
@@ -161,18 +161,18 @@ export default function Home() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.8 }}
-          className="mt-32 w-full max-w-6xl"
+          className="mt-20 sm:mt-32 w-full max-w-6xl"
         >
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+          <div className="text-center mb-12 sm:mb-16 px-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-3 sm:mb-4">
               Everything You Need to Succeed
             </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            <p className="text-gray-600 text-base sm:text-lg max-w-2xl mx-auto">
               Our AI-powered platform provides all the tools you need to create a standout resume
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4">
             {[
               {
                 icon: Upload,
@@ -208,14 +208,14 @@ export default function Home() {
                 className="group relative"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-white/30 backdrop-blur-sm rounded-3xl border border-white/20 shadow-xl group-hover:shadow-2xl transition-all duration-300"></div>
-                <div className="relative p-8 rounded-3xl">
-                  <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${feature.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <feature.icon className="w-8 h-8 text-white" />
+                <div className="relative p-6 sm:p-8 rounded-3xl">
+                  <div className={`inline-flex p-3 sm:p-4 rounded-2xl bg-gradient-to-r ${feature.color} mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <feature.icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-3">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-3">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
                     {feature.description}
                   </p>
                 </div>
@@ -229,12 +229,12 @@ export default function Home() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.8, duration: 0.8 }}
-          className="mt-32 w-full max-w-4xl"
+          className="mt-20 sm:mt-32 w-full max-w-4xl"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 px-4">
             {[
-              { number: "10K+", label: "Resumes Created", icon: Star },
-              { number: "95%", label: "Success Rate", icon: Zap },
+              { number: "10+", label: "Resumes Created", icon: Star },
+              { number: "98%", label: "Success Rate", icon: Zap },
               { number: "24/7", label: "AI Support", icon: Shield }
             ].map((stat, index) => (
               <motion.div
@@ -244,10 +244,10 @@ export default function Home() {
                 transition={{ delay: 2 + index * 0.2, duration: 0.6 }}
                 className="text-center"
               >
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg">
-                  <stat.icon className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                  <div className="text-3xl font-bold text-gray-800 mb-2">{stat.number}</div>
-                  <div className="text-gray-600">{stat.label}</div>
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/20 shadow-lg">
+                  <stat.icon className="w-8 h-8 sm:w-12 sm:h-12 text-blue-600 mx-auto mb-3 sm:mb-4" />
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">{stat.number}</div>
+                  <div className="text-gray-600 text-sm sm:text-base">{stat.label}</div>
                 </div>
               </motion.div>
             ))}

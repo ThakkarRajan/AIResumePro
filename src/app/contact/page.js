@@ -187,25 +187,25 @@ export default function Contact() {
         }}
       />
       
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl mb-6 shadow-lg">
-            <MessageSquare className="w-10 h-10 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl mb-4 sm:mb-6 shadow-lg">
+            <MessageSquare className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 sm:mb-4">
             Get in Touch
           </h1>
-          <p className="text-gray-600 text-lg md:text-xl max-w-2xl mx-auto">
+          <p className="text-gray-600 text-base sm:text-lg md:text-xl max-w-2xl mx-auto">
             Have questions about our AI-powered resume service? We'd love to hear from you and help you create the perfect resume.
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Contact Information */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -214,18 +214,18 @@ export default function Contact() {
             className="lg:col-span-2 space-y-6"
           >
             {/* Contact Methods */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-8">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-purple-600" />
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-6 sm:mb-8">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Contact Information</h2>
-                  <p className="text-gray-600">Reach out to us through your preferred method</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Contact Information</h2>
+                  <p className="text-gray-600 text-sm sm:text-base">Reach out to us through your preferred method</p>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {contactMethods.map((method, index) => (
                   <motion.a
                     key={method.title}
@@ -237,17 +237,17 @@ export default function Contact() {
                     transition={{ delay: 0.2 + index * 0.1 }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="group p-6 rounded-2xl border border-gray-200 hover:border-purple-300 transition-all duration-200 hover:shadow-lg"
+                    className="group p-4 sm:p-6 rounded-2xl border border-gray-200 hover:border-purple-300 transition-all duration-200 hover:shadow-lg"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 ${method.bgColor} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                        <method.icon className={`w-6 h-6 ${method.iconColor}`} />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 ${method.bgColor} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                        <method.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${method.iconColor}`} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">{method.title}</h3>
-                        <p className="text-gray-600 text-sm break-all">{method.value}</p>
+                        <h3 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">{method.title}</h3>
+                        <p className="text-gray-600 text-xs sm:text-sm break-all">{method.value}</p>
                       </div>
-                      <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+                      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
                     </div>
                   </motion.a>
                 ))}

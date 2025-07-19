@@ -634,19 +634,19 @@ export default function WordDownloadPage() {
 
   if (!resumeData && !error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="relative w-20 h-20 mb-6">
-            <div className="w-20 h-20 border-4 border-purple-200/20 border-t-purple-500 rounded-full animate-spin" />
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-4 sm:mb-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-purple-200/20 border-t-purple-500 rounded-full animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-purple-400 animate-pulse" />
+              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 animate-pulse" />
             </div>
           </div>
-          <p className="text-gray-600 font-medium text-lg">Preparing your resume...</p>
+          <p className="text-gray-600 font-medium text-base sm:text-lg">Preparing your resume...</p>
         </motion.div>
       </div>
     );
@@ -660,29 +660,29 @@ export default function WordDownloadPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/10 to-pink-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 sm:p-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-6 sm:mb-8"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-3xl mb-6 shadow-lg">
-            <Download className="w-10 h-10 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-3xl mb-4 sm:mb-6 shadow-lg">
+            <Download className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2 sm:mb-3">
             Resume Ready!
           </h1>
-          <p className="text-gray-600 text-lg">Download your AI-tailored resume in multiple formats</p>
+          <p className="text-gray-600 text-base sm:text-lg">Download your AI-tailored resume in multiple formats</p>
           
           {/* Back Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => router.push("/result")}
-            className="mt-6 inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-gray-700 px-4 py-2 rounded-xl border border-white/20 shadow-sm hover:shadow-md transition-all duration-200"
+            className="mt-4 sm:mt-6 inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-gray-700 px-3 sm:px-4 py-2 rounded-xl border border-white/20 shadow-sm hover:shadow-md transition-all duration-200 text-sm sm:text-base"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
             Back to Editor
           </motion.button>
         </motion.div>
@@ -706,10 +706,10 @@ export default function WordDownloadPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 w-full max-w-4xl"
+          className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-6 sm:p-8 w-full max-w-4xl"
         >
           {/* Download Options */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {/* Word Document */}
             <motion.div
               whileHover={{ y: -4 }}

@@ -68,6 +68,8 @@ export default function Dashboard() {
   const [isOnline, setIsOnline] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fileToDelete, setFileToDelete] = useState(null);
+  const [showResultSkeleton, setShowResultSkeleton] = useState(false);
+  const [aiData, setAiData] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -77,6 +79,24 @@ export default function Dashboard() {
   useEffect(() => {
     if (status === "authenticated") fetchUploadedResumes();
   }, [status]);
+
+  // Cleanup effect to reset states when component unmounts
+  useEffect(() => {
+    return () => {
+      // Cleanup function to reset states
+      setJobText("");
+      setPdfFile(null);
+      setTextResume("");
+      setSelectedResume(null);
+      setUploadMode("pdf");
+      setDragActive(false);
+      setShowFilePreview(false);
+      setLoading(false);
+      setProgress(0);
+      setShowResultSkeleton(false);
+      setAiData(null);
+    };
+  }, []);
 
   // Network status monitoring
   useEffect(() => {
@@ -482,9 +502,15 @@ export default function Dashboard() {
         }
       }
 
-      // STEP 5: Save and redirect
+      // STEP 5: Save data and show skeleton
       localStorage.setItem("tailoredResume", JSON.stringify(aiData.structured));
-      router.push("/result");
+      setAiData(aiData.structured);
+      setShowResultSkeleton(true);
+      
+      // Redirect after showing skeleton for 2 seconds
+      setTimeout(() => {
+        router.push("/result");
+      }, 2000);
     } catch (err) {
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
         showNetworkRetry();
@@ -543,88 +569,142 @@ export default function Dashboard() {
   };
 
   const clearForm = () => {
+    // Reset all form states
     setJobText("");
     setPdfFile(null);
     setTextResume("");
     setSelectedResume(null);
+    setUploadMode("pdf"); // Reset to default mode
+    setDragActive(false);
+    setShowFilePreview(false);
+    setShowResultSkeleton(false);
+    setAiData(null);
+    
+    // Clear file input if it exists
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    
+    // Reset progress and loading states
+    setProgress(0);
+    setLoading(false);
+    
+    // Show success message
     showFormCleared();
+    
+    // Small delay to ensure smooth transition
+    setTimeout(() => {
+      // Force re-render by updating a dummy state
+      setJobText("");
+    }, 100);
   };
 
   const switchUploadMode = (mode) => {
+    // Clear all form data when switching modes
     setUploadMode(mode);
     setPdfFile(null);
     setTextResume("");
     setSelectedResume(null);
+    setDragActive(false);
+    setShowFilePreview(false);
+    
+    // Clear file input if it exists
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    
+    // Reset progress and loading states
+    setProgress(0);
+    setLoading(false);
   };
 
   if (status === "loading") {
     return (
       <>
-        {/* Full Screen Loading Overlay - Covers everything including navbar */}
-        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 z-[9999] flex flex-col items-center justify-center">
+        {/* Enhanced Session Loading Screen */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 z-[9999] flex flex-col items-center justify-center overflow-hidden">
           {/* Animated Background Elements */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/10 to-pink-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-pink-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-purple-400/10 to-pink-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
           </div>
 
           {/* Loading Content */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="text-center relative z-10"
+            className="text-center relative z-10 max-w-md mx-auto px-6"
           >
-            {/* Logo and Brand */}
+            {/* Enhanced Logo and Brand */}
             <motion.div 
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center justify-center gap-4 mb-8"
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="flex flex-col items-center gap-6 mb-12"
             >
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
                 <Image
                   src="/logo.png"
                   alt="I Love Resume Logo"
-                  width={80}
-                  height={80}
+                  width={100}
+                  height={100}
                   priority
-                  className="relative z-10 rounded-2xl"
+                  className="relative z-10 rounded-3xl shadow-2xl"
+                  style={{ width: "auto", height: "auto" }}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-3">
                 <Image
-                  src="/i love resume logo text.png"
+                  src="/Iloveresumelogotext.png"
                   alt="I Love Resume Logo"
                   width={300}
                   height={80}
                   priority
-                  className="h-16 sm:h-20 object-contain"
+                  className="h-20 sm:h-24 object-contain"
+                  style={{ width: "auto", height: "auto" }}
                 />
-                <Sparkles className="w-8 h-8 text-yellow-500 animate-pulse" />
+                <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                  <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
+                  <span className="text-sm font-medium text-gray-700">AI-Powered Resume Builder</span>
+                </div>
               </div>
             </motion.div>
 
-            {/* Loading Spinner */}
+            {/* Enhanced Loading Spinner */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="relative w-24 h-24 mb-6"
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="relative w-32 h-32 mb-8"
             >
-              <div className="w-24 h-24 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+              <div className="absolute inset-0 w-32 h-32 border-4 border-purple-200/30 rounded-full"></div>
+              <div className="absolute inset-0 w-32 h-32 border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
+              <div className="absolute inset-2 w-28 h-28 border-4 border-pink-200/30 rounded-full"></div>
+              <div className="absolute inset-2 w-28 h-28 border-4 border-transparent border-t-pink-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-purple-400 animate-pulse" />
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Sparkles className="w-8 h-8 text-white animate-pulse" />
+                </div>
               </div>
             </motion.div>
 
-            {/* Loading Text */}
+            {/* Enhanced Loading Text */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+              className="space-y-4"
             >
-              <p className="text-gray-600 font-medium text-lg">Checking session...</p>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Initializing...
+              </h3>
+              <p className="text-gray-600 font-medium text-lg">Checking your session</p>
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                <span>Verifying authentication</span>
+              </div>
             </motion.div>
           </motion.div>
         </div>
@@ -635,105 +715,283 @@ export default function Dashboard() {
   if (loading) {
     return (
       <>
-        {/* Full Screen Loading Overlay - Covers everything including navbar */}
-        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 z-[9999] flex flex-col items-center justify-center">
+        {/* Enhanced AI Processing Loading Screen */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 z-[9999] flex flex-col items-center justify-center overflow-hidden">
           {/* Animated Background Elements */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/10 to-pink-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-pink-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-purple-400/10 to-pink-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
           </div>
 
           {/* Loading Content */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="text-center relative z-10"
+            className="text-center relative z-10 max-w-2xl mx-auto px-6"
           >
-            {/* Logo and Brand */}
+            {/* Enhanced Logo and Brand */}
             <motion.div 
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center justify-center gap-4 mb-8"
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="flex flex-col items-center gap-6 mb-10"
             >
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
                 <Image
                   src="/logo.png"
                   alt="I Love Resume Logo"
-                  width={80}
-                  height={80}
+                  width={100}
+                  height={100}
                   priority
-                  className="relative z-10 rounded-2xl"
+                  className="relative z-10 rounded-3xl shadow-2xl"
+                  style={{ width: "auto", height: "auto" }}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-3">
                 <Image
-                  src="/i love resume logo text.png"
+                  src="/Iloveresumelogotext.png"
                   alt="I Love Resume Logo"
                   width={300}
                   height={80}
                   priority
-                  className="h-16 sm:h-20 object-contain"
+                  className="h-20 sm:h-24 object-contain"
+                  style={{ width: "auto", height: "auto" }}
                 />
-                <Sparkles className="w-8 h-8 text-yellow-500 animate-pulse" />
+                <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                  <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
+                  <span className="text-sm font-medium text-gray-700">AI-Powered Resume Builder</span>
+                </div>
               </div>
             </motion.div>
 
-            {/* Loading Spinner */}
+            {/* Enhanced Loading Spinner */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="relative w-32 h-32 mb-8"
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="relative w-40 h-40 mb-8"
             >
-              <div className="w-32 h-32 border-4 border-purple-200/20 border-t-purple-500 rounded-full animate-spin" />
+              <div className="absolute inset-0 w-40 h-40 border-4 border-purple-200/30 rounded-full"></div>
+              <div className="absolute inset-0 w-40 h-40 border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
+              <div className="absolute inset-3 w-34 h-34 border-4 border-pink-200/30 rounded-full"></div>
+              <div className="absolute inset-3 w-34 h-34 border-4 border-transparent border-t-pink-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="w-12 h-12 text-purple-400 animate-pulse" />
+                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Sparkles className="w-10 h-10 text-white animate-pulse" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Enhanced Loading Text */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+              className="space-y-6"
+            >
+              <div>
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                  AI is crafting your resume...
+                </h3>
+                <p className="text-gray-600 text-xl">This may take a few moments</p>
+              </div>
+              
+              {/* Enhanced Progress Bar */}
+              <div className="w-full max-w-md mx-auto">
+                <div className="bg-gray-200/50 backdrop-blur-sm rounded-full h-4 mb-3 shadow-inner">
+                  <motion.div
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-4 rounded-full shadow-lg"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 font-medium">{progress}% complete</p>
+              </div>
+            </motion.div>
+
+            {/* Enhanced Loading Steps */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+              className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-sm"
+            >
+              <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="font-medium text-gray-700">Uploading PDF/Text</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                <div className={`w-3 h-3 rounded-full animate-pulse ${progress > 30 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <span className="font-medium text-gray-700">Extracting Text</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                <div className={`w-3 h-3 rounded-full animate-pulse ${progress > 70 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <span className="font-medium text-gray-700">AI Processing</span>
+              </div>
+            </motion.div>
+
+            {/* Additional Info */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.2, duration: 0.6 }}
+              className="mt-8 p-4 bg-blue-50/80 backdrop-blur-sm rounded-2xl border border-blue-200/50"
+            >
+              <div className="flex items-center gap-2 text-blue-700">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm font-medium">Processing time varies based on content length</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </>
+    );
+  }
+
+  if (showResultSkeleton) {
+    return (
+      <>
+        {/* Result Skeleton Loading Screen */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 z-[9999] flex flex-col items-center justify-center overflow-hidden">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-pink-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-green-400/10 to-blue-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+          </div>
+
+          {/* Skeleton Content */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-center relative z-10 max-w-4xl mx-auto px-6"
+          >
+            {/* Success Header */}
+            <motion.div 
+              initial={{ opacity: 0, y: -30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="flex flex-col items-center gap-6 mb-12"
+            >
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
+                <div className="relative z-10 w-24 h-24 bg-gradient-to-r from-green-500 to-blue-500 rounded-3xl shadow-2xl flex items-center justify-center">
+                  <CheckCircle className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                  Resume Generated Successfully!
+                </h2>
+                <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                  <Sparkles className="w-4 h-4 text-green-500 animate-pulse" />
+                  <span className="text-sm font-medium text-gray-700">AI-Powered Results Ready</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Result Preview Skeleton */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 max-w-3xl mx-auto"
+            >
+              <div className="space-y-6">
+                {/* Header Skeleton */}
+                <div className="text-center space-y-4">
+                  <div className="h-8 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg animate-pulse mx-auto w-64"></div>
+                  <div className="h-6 bg-gray-200 rounded-lg animate-pulse mx-auto w-48"></div>
+                </div>
+
+                {/* Contact Info Skeleton */}
+                <div className="space-y-3">
+                  <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
+
+                {/* Sections Skeleton */}
+                <div className="space-y-6">
+                  {/* Summary Section */}
+                  <div className="space-y-3">
+                    <div className="h-6 bg-purple-200 rounded-lg animate-pulse w-24"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-4/6"></div>
+                    </div>
+                  </div>
+
+                  {/* Experience Section */}
+                  <div className="space-y-3">
+                    <div className="h-6 bg-blue-200 rounded-lg animate-pulse w-32"></div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="h-5 bg-gray-200 rounded animate-pulse w-48"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                        <div className="space-y-1">
+                          <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-4/6"></div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-5 bg-gray-200 rounded animate-pulse w-52"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-36"></div>
+                        <div className="space-y-1">
+                          <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skills Section */}
+                  <div className="space-y-3">
+                    <div className="h-6 bg-green-200 rounded-lg animate-pulse w-20"></div>
+                    <div className="flex flex-wrap gap-2">
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-16"></div>
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20"></div>
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-14"></div>
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-18"></div>
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-16"></div>
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-22"></div>
+                    </div>
+                  </div>
+
+                  {/* Education Section */}
+                  <div className="space-y-3">
+                    <div className="h-6 bg-yellow-200 rounded-lg animate-pulse w-28"></div>
+                    <div className="space-y-2">
+                      <div className="h-5 bg-gray-200 rounded animate-pulse w-40"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
 
             {/* Loading Text */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="space-y-4"
+              transition={{ delay: 0.8, duration: 0.6 }}
+              className="mt-8 space-y-4"
             >
-              <h3 className="text-2xl font-semibold text-gray-800 mb-2">AI is crafting your resume...</h3>
-              <p className="text-gray-600 text-lg mb-6">This may take a few moments</p>
-              
-              {/* Progress Bar */}
-              <div className="w-80 bg-gray-200 rounded-full h-3 mb-3 justify-center align-center">
-                <motion.div
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
-                />
+              <div className="flex items-center justify-center gap-2 text-green-600">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="font-medium">Preparing your results...</span>
               </div>
-              <p className="text-sm text-gray-500 font-medium">{progress}% complete</p>
-            </motion.div>
-
-            {/* Loading Steps */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="mt-8 flex items-center justify-center gap-6 text-sm text-gray-500"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Uploading Pdf/Text</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${progress > 30 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                <span>Extracting Text</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${progress > 70 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                <span>AI Processing</span>
-              </div>
+              <p className="text-gray-600 text-sm">Redirecting to results page in a moment</p>
             </motion.div>
           </motion.div>
         </div>
@@ -755,33 +1013,34 @@ export default function Dashboard() {
         }}
       />
       
-      {/* Floating Action Button */}
+      {/* Enhanced Floating Action Button */}
       <motion.button
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5 }}
-        whileHover={{ scale: 1.1 }}
+        whileHover={{ scale: 1.1, rotate: 90 }}
         whileTap={{ scale: 0.9 }}
         onClick={clearForm}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center z-40 transition-all duration-200"
-        title="Clear form"
+        className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-xl hover:shadow-2xl flex items-center justify-center z-40 transition-all duration-300 group"
+        title="Clear all form data"
       >
-        <Plus className="w-6 h-6" />
+        <Plus className="w-7 h-7 group-hover:rotate-90 transition-transform duration-300" />
+        <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300"></div>
       </motion.button>
       
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Network Status Warning */}
         {!isOnline && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-2xl"
           >
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
               <div>
-                <p className="text-red-800 font-medium">You're currently offline</p>
-                <p className="text-red-700 text-sm">Please check your internet connection to use AI features</p>
+                <p className="text-red-800 font-medium text-sm sm:text-base">You're currently offline</p>
+                <p className="text-red-700 text-xs sm:text-sm">Please check your internet connection to use AI features</p>
               </div>
             </div>
           </motion.div>
@@ -791,72 +1050,72 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-8 sm:mb-12"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl mb-6 shadow-lg">
-            <User className="w-10 h-10 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl mb-4 sm:mb-6 shadow-lg">
+            <User className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 sm:mb-3">
             Welcome back, {session?.user?.name}!
         </h1>
-          <p className="text-gray-600 text-xl">Let's create your perfect resume</p>
+          <p className="text-gray-600 text-base sm:text-xl">Let's create your perfect resume</p>
           
           {/* Quick Stats */}
-          <div className="flex justify-center gap-8 mt-8">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-8 mt-6 sm:mt-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
+              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full shadow-sm"
             >
-              <FileCheck className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-gray-700">{uploadedResumes.length} Resumes</span>
+              <FileCheck className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
+              <span className="text-xs sm:text-sm font-medium text-gray-700">{uploadedResumes.length} Resumes</span>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
+              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full shadow-sm"
             >
-              <Zap className="w-4 h-4 text-purple-600" />
-              <span className="text-sm font-medium text-gray-700">AI Powered</span>
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />
+              <span className="text-xs sm:text-sm font-medium text-gray-700">AI Powered</span>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-sm ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full shadow-sm ${
                 isOnline 
                   ? 'bg-green-50 text-green-700' 
                   : 'bg-red-50 text-red-700'
               }`}
             >
               <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-sm font-medium">
+              <span className="text-xs sm:text-sm font-medium">
                 {isOnline ? 'Online' : 'Offline'}
               </span>
             </motion.div>
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8">
             {/* Job Description Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-8"
+              className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-6 sm:p-8"
             >
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mr-4">
-                    <Briefcase className="w-6 h-6 text-blue-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-2xl flex items-center justify-center mr-3 sm:mr-4">
+                    <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold text-gray-900">Job Description</h2>
-                    <p className="text-gray-500">Paste the job posting details here</p>
+                    <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Job Description</h2>
+                    <p className="text-gray-500 text-sm sm:text-base">Paste the job posting details here</p>
                   </div>
                 </div>
                 <motion.button
@@ -866,12 +1125,12 @@ export default function Dashboard() {
                   className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                   title="Clear job description"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.button>
               </div>
 
         <textarea
-                className="w-full h-48 p-6 border border-gray-200 rounded-2xl text-gray-900 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-lg"
+                className="w-full h-40 sm:h-48 p-4 sm:p-6 border border-gray-200 rounded-2xl text-gray-900 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-base sm:text-lg"
                 placeholder="Copy and paste the job description, requirements, and responsibilities here..."
           value={jobText}
           onChange={(e) => setJobText(e.target.value)}

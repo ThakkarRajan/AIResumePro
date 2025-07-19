@@ -6,8 +6,6 @@ import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Menu, 
-  X, 
   User, 
   LogOut, 
   Home, 
@@ -44,6 +42,8 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+
+
   const handleLogout = () => {
     localStorage.removeItem("tailoredResume");
     setShowModal(false);
@@ -51,22 +51,24 @@ export default function Navbar() {
     signOut({ callbackUrl: "/" });
   };
 
+
+
   return (
     <>
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        className={`w-full px-4 sm:px-6 py-4 sticky top-0 z-50 transition-all duration-300 ${
+        className={`w-full px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50 transition-all duration-300 ${
           isScrolled 
-            ? 'bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200/50' 
-            : 'bg-white/95 backdrop-blur-sm'
+            ? 'bg-white/90 backdrop-blur-md shadow-lg border-b border-gray-200/50' 
+            : 'bg-white/95 backdrop-blur-sm shadow-sm'
         }`}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Left Side: Logo & Links */}
           <div className="flex items-center gap-4 sm:gap-6">
             <Link
-              href="/"
+              href="/dashboard"
               className="flex items-center gap-2 group"
             >
               <motion.div
@@ -80,43 +82,46 @@ export default function Navbar() {
                   width={48} 
                   height={48} 
                   className="rounded-xl shadow-sm"
+                  style={{ width: "auto", height: "auto" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </motion.div>
               <div className="hidden sm:block">
                 <Image
-                  src="/i love resume logo text.png"
+                  src="/Iloveresumelogotext.png"
                   alt="I Love Resume Logo"
                   width={200}
                   height={40}
                   className="h-8 object-contain"
+                  style={{ width: "auto", height: "auto" }}
                 />
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <Sparkles className="w-3 h-3" />
                   <span>AI-Powered Resumes</span>
                 </div>
               </div>
-            </Link>
+                          </Link>
 
-            {/* {status === "authenticated" && (
-              <div className="hidden md:flex items-center gap-1">
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-purple-600 font-medium transition-all duration-200 rounded-lg hover:bg-purple-50 group"
-                >
-                  <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/contact"
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-purple-600 font-medium transition-all duration-200 rounded-lg hover:bg-purple-50 group"
-                >
-                  <MessageSquare className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  Contact
-                </Link>
+                        {/* Mobile Branding */}
+            {status === "authenticated" && (
+              <div className="flex flex-direction-row sm:hidden items-center gap-3">
+                <div className="flex flex-col  gap-2">
+                  <Image
+                    src="/Iloveresumelogotext.png"
+                    alt="I Love Resume Logo"
+                    width={150}
+                    height={30}
+                    className="h-6 object-contain"
+                    style={{ width: "auto", height: "auto" }}
+                  />
+                  <div className="flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-purple-500" />
+                    <span className="text-xs text-gray-500 font-medium">AI-Powered</span>
+                  </div>
+                </div>
               </div>
-            )} */}
-          </div>
+            )}
+            </div>
 
           {/* Right Side: Profile Button */}
           <div className="relative" ref={menuRef}>
@@ -126,10 +131,10 @@ export default function Navbar() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setShowMenu((prev) => !prev)}
-                  className="flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-5 py-3 rounded-2xl font-medium text-sm transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-3 sm:px-5 py-2 sm:py-3 rounded-2xl font-medium text-xs sm:text-sm transition-all duration-200 shadow-md hover:shadow-lg border border-purple-500/20"
                 >
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4" />
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <User className="w-3 h-3 sm:w-4 sm:h-4" />
                   </div>
                   <div className="hidden sm:block text-left">
                     <div className="font-semibold text-sm">
@@ -137,7 +142,7 @@ export default function Navbar() {
                     </div>
                     <div className="text-xs text-white/80">Premium User</div>
                   </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showMenu ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 ${showMenu ? 'rotate-180' : ''}`} />
                 </motion.button>
 
                 <AnimatePresence>
@@ -147,10 +152,10 @@ export default function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-4 w-72 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-gray-200/50 z-50 overflow-hidden"
+                      className="absolute right-0 mt-3 w-80 sm:w-72 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-gray-200/50 z-50 overflow-hidden"
                     >
                       {/* Profile Header */}
-                      <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
+                      <div className="p-5 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
                         <div className="flex items-center gap-4">
                           <div className="relative">
                             {session?.user?.image ? (
@@ -187,45 +192,45 @@ export default function Navbar() {
                       </div>
                       
                       {/* Menu Items */}
-                      <div className="p-3">
+                      <div className="p-2 sm:p-3">
                         <Link
                           href="/dashboard"
-                          className="flex items-center gap-4 w-full px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200 group"
+                          className="flex items-center gap-3 sm:gap-4 w-full px-3 sm:px-4 py-2.5 sm:py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200 group"
                           onClick={() => setShowMenu(false)}
                         >
-                          <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                            <Home className="w-5 h-5" />
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium">Dashboard</div>
+                            <div className="font-medium text-sm sm:text-base">Dashboard</div>
                             <div className="text-xs text-gray-500">Manage your resumes</div>
                           </div>
                         </Link>
 
                         <Link
                           href="/myprofile"
-                          className="flex items-center gap-4 w-full px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200 group"
+                          className="flex items-center gap-3 sm:gap-4 w-full px-3 sm:px-4 py-2.5 sm:py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200 group"
                           onClick={() => setShowMenu(false)}
                         >
-                          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                            <Settings className="w-5 h-5" />
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium">My Profile</div>
+                            <div className="font-medium text-sm sm:text-base">My Profile</div>
                             <div className="text-xs text-gray-500">View submissions & settings</div>
                           </div>
                         </Link>
 
                         <Link
                           href="/contact"
-                          className="flex items-center gap-4 w-full px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200 group"
+                          className="flex items-center gap-3 sm:gap-4 w-full px-3 sm:px-4 py-2.5 sm:py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200 group"
                           onClick={() => setShowMenu(false)}
                         >
-                          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                            <MessageSquare className="w-5 h-5" />
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium">Contact Us</div>
+                            <div className="font-medium text-sm sm:text-base">Contact Us</div>
                             <div className="text-xs text-gray-500">Get help & support</div>
                           </div>
                         </Link>
@@ -237,13 +242,13 @@ export default function Navbar() {
                             setShowMenu(false);
                             setShowModal(true);
                           }}
-                          className="flex items-center gap-4 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 group"
+                          className="flex items-center gap-3 sm:gap-4 w-full px-3 sm:px-4 py-2.5 sm:py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 group"
                         >
-                          <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center group-hover:bg-red-200 transition-colors">
-                            <LogOut className="w-5 h-5" />
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-red-100 rounded-xl flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
                           <div className="flex-1 text-left">
-                            <div className="font-medium">Logout</div>
+                            <div className="font-medium text-sm sm:text-base">Logout</div>
                             <div className="text-xs text-red-500">Sign out of your account</div>
                           </div>
                         </button>
@@ -264,119 +269,10 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          {status === "authenticated" && (
-            <button
-              onClick={() => setShowMenu((prev) => !prev)}
-              className="md:hidden p-2 text-gray-600 hover:text-purple-600 transition-colors"
-            >
-              {showMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          )}
+
         </div>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {showMenu && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden mt-4 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200/50 overflow-hidden"
-            >
-              {/* Mobile Profile Header */}
-              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    {session?.user?.image ? (
-                      <Image
-                        src={session.user.image}
-                        alt="Profile"
-                        width={48}
-                        height={48}
-                        className="rounded-2xl border-2 border-white shadow-lg"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                    )}
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">
-                      {session?.user?.name}
-                    </h3>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Mail className="w-3 h-3" />
-                      <span className="truncate">{session?.user?.email}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <div className="p-4 space-y-2">
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200"
-                  onClick={() => setShowMenu(false)}
-                >
-                  <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <Home className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Dashboard</div>
-                    <div className="text-xs text-gray-500">Manage your resumes</div>
-                  </div>
-                </Link>
-                <Link
-                  href="/contact"
-                  className="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200"
-                  onClick={() => setShowMenu(false)}
-                >
-                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Contact</div>
-                    <div className="text-xs text-gray-500">Get help & support</div>
-                  </div>
-                </Link>
-                <Link
-                  href="/myprofile"
-                  className="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200"
-                  onClick={() => setShowMenu(false)}
-                >
-                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <Settings className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-medium">My Profile</div>
-                    <div className="text-xs text-gray-500">View submissions & settings</div>
-                  </div>
-                </Link>
-                <div className="border-t border-gray-100 my-2"></div>
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    setShowModal(true);
-                  }}
-                  className="flex items-center gap-4 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
-                >
-                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                    <LogOut className="w-5 h-5" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-medium">Logout</div>
-                    <div className="text-xs text-red-500">Sign out of your account</div>
-                  </div>
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.nav>
 
       {/* Logout Confirmation Modal */}
