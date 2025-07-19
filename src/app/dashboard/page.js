@@ -70,6 +70,8 @@ export default function Dashboard() {
   const [fileToDelete, setFileToDelete] = useState(null);
   const [showResultSkeleton, setShowResultSkeleton] = useState(false);
   const [aiData, setAiData] = useState(null);
+  const [showRecentResults, setShowRecentResults] = useState(false);
+  const [recentResults, setRecentResults] = useState([]);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -77,7 +79,10 @@ export default function Dashboard() {
   }, [status]);
 
   useEffect(() => {
-    if (status === "authenticated") fetchUploadedResumes();
+    if (status === "authenticated") {
+      fetchUploadedResumes();
+      loadRecentResults();
+    }
   }, [status]);
 
   // Cleanup effect to reset states when component unmounts
@@ -95,6 +100,7 @@ export default function Dashboard() {
       setProgress(0);
       setShowResultSkeleton(false);
       setAiData(null);
+      setShowRecentResults(false);
     };
   }, []);
 
@@ -505,6 +511,10 @@ export default function Dashboard() {
       // STEP 5: Save data and show skeleton
       localStorage.setItem("tailoredResume", JSON.stringify(aiData.structured));
       setAiData(aiData.structured);
+      
+      // Save to recent results
+      saveToRecentResults(aiData.structured, jobText);
+      
       setShowResultSkeleton(true);
       
       // Redirect after showing skeleton for 2 seconds
@@ -616,6 +626,77 @@ export default function Dashboard() {
     // Reset progress and loading states
     setProgress(0);
     setLoading(false);
+  };
+
+  // Load recent results from localStorage
+  const loadRecentResults = () => {
+    try {
+      const stored = localStorage.getItem(`recentResults_${session?.user?.email}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setRecentResults(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading recent results:", error);
+      setRecentResults([]);
+    }
+  };
+
+  // Save result to recent results (only keep the latest one)
+  const saveToRecentResults = (resultData, jobText) => {
+    try {
+      const email = session?.user?.email;
+      if (!email) return;
+
+      const newResult = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        jobText: jobText,
+        resultData: resultData,
+        fileName: pdfFile?.name || `text-resume-${Date.now()}.txt`
+      };
+
+      // Store only the latest result
+      localStorage.setItem(`recentResults_${email}`, JSON.stringify([newResult]));
+      setRecentResults([newResult]);
+    } catch (error) {
+      console.error("Error saving recent result:", error);
+    }
+  };
+
+  // Load the recent result
+  const loadRecentResult = () => {
+    try {
+      if (recentResults.length === 0) return;
+      
+      const result = recentResults[0];
+      localStorage.setItem("tailoredResume", JSON.stringify(result.resultData));
+      setAiData(result.resultData);
+      setShowResultSkeleton(true);
+      
+      // Redirect after showing skeleton for 2 seconds
+      setTimeout(() => {
+        router.push("/result");
+      }, 2000);
+    } catch (error) {
+      console.error("Error loading recent result:", error);
+      showError("Failed to load recent result");
+    }
+  };
+
+  // Delete the recent result
+  const deleteRecentResult = () => {
+    try {
+      const email = session?.user?.email;
+      if (!email) return;
+
+      localStorage.removeItem(`recentResults_${email}`);
+      setRecentResults([]);
+      showSuccess("Recent result deleted");
+    } catch (error) {
+      console.error("Error deleting recent result:", error);
+      showError("Failed to delete recent result");
+    }
   };
 
   if (status === "loading") {
@@ -893,87 +974,136 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            {/* Result Preview Skeleton */}
+            {/* Result Page Skeleton - Matching Actual Result Page */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 max-w-3xl mx-auto"
+              className="w-full max-w-7xl mx-auto"
             >
-              <div className="space-y-6">
-                {/* Header Skeleton */}
-                <div className="text-center space-y-4">
-                  <div className="h-8 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg animate-pulse mx-auto w-64"></div>
-                  <div className="h-6 bg-gray-200 rounded-lg animate-pulse mx-auto w-48"></div>
-                </div>
+              {/* Header Skeleton */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-200 to-pink-200 rounded-3xl mb-6 animate-pulse"></div>
+                <div className="h-12 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg animate-pulse mx-auto w-64 mb-3"></div>
+                <div className="h-6 bg-gray-200 rounded animate-pulse mx-auto w-48 mb-6"></div>
+                <div className="h-10 bg-white/80 backdrop-blur-sm rounded-xl animate-pulse mx-auto w-40"></div>
+              </div>
 
-                {/* Contact Info Skeleton */}
-                <div className="space-y-3">
-                  <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                  </div>
-                </div>
-
-                {/* Sections Skeleton */}
-                <div className="space-y-6">
-                  {/* Summary Section */}
-                  <div className="space-y-3">
-                    <div className="h-6 bg-purple-200 rounded-lg animate-pulse w-24"></div>
+              {/* Main Content Grid */}
+              <div className="grid lg:grid-cols-4 gap-8">
+                {/* Sidebar Navigation Skeleton */}
+                <div className="lg:col-span-1">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-6">
+                    <div className="h-6 bg-gray-200 rounded animate-pulse w-20 mb-4"></div>
                     <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-4/6"></div>
+                      {/* Navigation Items */}
+                      {[1, 2, 3, 4, 5].map((item) => (
+                        <div key={item} className="flex items-center gap-3 px-4 py-3 rounded-xl">
+                          <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse flex-1"></div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="mt-8 space-y-3">
+                      <div className="h-12 bg-gradient-to-r from-green-200 to-emerald-200 rounded-xl animate-pulse"></div>
+                      <div className="h-12 bg-gradient-to-r from-blue-200 to-indigo-200 rounded-xl animate-pulse"></div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Experience Section */}
-                  <div className="space-y-3">
-                    <div className="h-6 bg-blue-200 rounded-lg animate-pulse w-32"></div>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="h-5 bg-gray-200 rounded animate-pulse w-48"></div>
+                {/* Main Content Area Skeleton */}
+                <div className="lg:col-span-3">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-8">
+                    {/* Section Header */}
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-purple-100 rounded-2xl animate-pulse"></div>
+                      <div>
+                        <div className="h-7 bg-gray-200 rounded animate-pulse w-48 mb-2"></div>
                         <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-                        <div className="space-y-1">
-                          <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
-                          <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                          <div className="h-3 bg-gray-200 rounded animate-pulse w-4/6"></div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-5 bg-gray-200 rounded animate-pulse w-52"></div>
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-36"></div>
-                        <div className="space-y-1">
-                          <div className="h-3 bg-gray-200 rounded animate-pulse"></div>
-                          <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Skills Section */}
-                  <div className="space-y-3">
-                    <div className="h-6 bg-green-200 rounded-lg animate-pulse w-20"></div>
-                    <div className="flex flex-wrap gap-2">
-                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-16"></div>
-                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20"></div>
-                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-14"></div>
-                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-18"></div>
-                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-16"></div>
-                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-22"></div>
-                    </div>
-                  </div>
+                    {/* Form Fields */}
+                    <div className="space-y-6">
+                      {/* Name Field */}
+                      <div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-20 mb-2"></div>
+                        <div className="h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+                      </div>
 
-                  {/* Education Section */}
-                  <div className="space-y-3">
-                    <div className="h-6 bg-yellow-200 rounded-lg animate-pulse w-28"></div>
-                    <div className="space-y-2">
-                      <div className="h-5 bg-gray-200 rounded animate-pulse w-40"></div>
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                      {/* Contact Fields Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[1, 2, 3, 4].map((item) => (
+                          <div key={item}>
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-16 mb-2"></div>
+                            <div className="relative">
+                              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                              <div className="h-12 bg-gray-200 rounded-xl animate-pulse pl-10"></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Summary Section */}
+                      <div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-16 mb-2"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-4/6"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-3/6"></div>
+                        </div>
+                      </div>
+
+                      {/* Skills Section */}
+                      <div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-20 mb-2"></div>
+                        <div className="bg-gray-50 rounded-xl p-4">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-16 mb-2"></div>
+                          <div className="flex flex-wrap gap-2">
+                            {[1, 2, 3, 4, 5, 6].map((item) => (
+                              <div key={item} className="h-6 bg-gray-200 rounded-full animate-pulse w-16"></div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Experience Section */}
+                      <div>
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-green-100 rounded-2xl animate-pulse"></div>
+                            <div>
+                              <div className="h-7 bg-gray-200 rounded animate-pulse w-40 mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                            </div>
+                          </div>
+                          <div className="h-10 bg-gradient-to-r from-purple-200 to-pink-200 rounded-xl animate-pulse w-32"></div>
+                        </div>
+                        
+                        {/* Experience Card */}
+                        <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {[1, 2, 3, 4].map((item) => (
+                              <div key={item}>
+                                <div className="h-4 bg-gray-200 rounded animate-pulse w-16 mb-2"></div>
+                                <div className="h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-20 mb-2"></div>
+                            {[1, 2, 3].map((item) => (
+                              <div key={item} className="flex items-center gap-3">
+                                <div className="w-2 h-2 bg-gray-200 rounded-full animate-pulse"></div>
+                                <div className="h-4 bg-gray-200 rounded animate-pulse flex-1"></div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1095,6 +1225,18 @@ export default function Dashboard() {
                 {isOnline ? 'Online' : 'Offline'}
               </span>
             </motion.div>
+            {recentResults.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                onClick={() => setShowRecentResults(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 sm:px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="text-xs sm:text-sm font-medium">Recent Result</span>
+              </motion.button>
+            )}
           </div>
         </motion.div>
 
@@ -1471,6 +1613,125 @@ export default function Dashboard() {
                     className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
                   >
                     Delete
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Recent Result Modal */}
+      <AnimatePresence>
+        {showRecentResults && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">Recent Result</h3>
+                    <p className="text-gray-500 text-sm">Your last generated resume</p>
+                  </div>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowRecentResults(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </motion.button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {recentResults.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Clock className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Recent Result</h4>
+                    <p className="text-gray-500">Generate your first resume to see it here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentResults.map((result) => (
+                      <motion.div
+                        key={result.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-gray-50 rounded-2xl p-6 border border-gray-200"
+                      >
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">{result.fileName}</h4>
+                            <p className="text-sm text-gray-500">
+                              {new Date(result.timestamp).toLocaleDateString()} at {new Date(result.timestamp).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-xl p-4 mb-4">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium text-gray-700">Job Description:</span> {result.jobText}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={loadRecentResult}
+                            className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+                          >
+                            Continue Editing
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={deleteRecentResult}
+                            className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
+                            title="Delete result"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">
+                    Last updated: {recentResults.length > 0 ? new Date(recentResults[0].timestamp).toLocaleString() : 'Never'}
+                  </p>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowRecentResults(false)}
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+                  >
+                    Close
                   </motion.button>
                 </div>
               </div>

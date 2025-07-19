@@ -144,6 +144,7 @@ export default function ResultPage() {
   const [activeSection, setActiveSection] = useState("personal");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState("saved"); // "saving", "saved", "error"
 
   // ✅ Always call hooks before any conditionals
   useEffect(() => {
@@ -332,6 +333,32 @@ export default function ResultPage() {
       } else {
         updated[section] = value;
       }
+      
+      // Auto-save to localStorage on every change
+      try {
+        localStorage.setItem("tailoredResume", JSON.stringify(updated));
+        
+        // Update recent result in dashboard
+        const email = session?.user?.email;
+        if (email) {
+          const existing = localStorage.getItem(`recentResults_${email}`);
+          if (existing) {
+            const recentResults = JSON.parse(existing);
+            if (recentResults.length > 0) {
+              recentResults[0].resultData = updated;
+              recentResults[0].timestamp = new Date().toISOString();
+              localStorage.setItem(`recentResults_${email}`, JSON.stringify(recentResults));
+            }
+          }
+        }
+        
+        setAutoSaveStatus("saved");
+      } catch (updateError) {
+        console.error('Error updating localStorage:', updateError);
+        setAutoSaveStatus("error");
+        // Don't fail the operation if localStorage update fails
+      }
+      
       return updated;
     });
   };
@@ -340,6 +367,32 @@ export default function ResultPage() {
     setResumeData((prev) => {
       const updated = { ...prev };
       updated[section][index][key] = value;
+      
+      // Auto-save to localStorage on every change
+      try {
+        localStorage.setItem("tailoredResume", JSON.stringify(updated));
+        
+        // Update recent result in dashboard
+        const email = session?.user?.email;
+        if (email) {
+          const existing = localStorage.getItem(`recentResults_${email}`);
+          if (existing) {
+            const recentResults = JSON.parse(existing);
+            if (recentResults.length > 0) {
+              recentResults[0].resultData = updated;
+              recentResults[0].timestamp = new Date().toISOString();
+              localStorage.setItem(`recentResults_${email}`, JSON.stringify(recentResults));
+            }
+          }
+        }
+        
+        setAutoSaveStatus("saved");
+      } catch (updateError) {
+        console.error('Error updating localStorage:', updateError);
+        setAutoSaveStatus("error");
+        // Don't fail the operation if localStorage update fails
+      }
+      
       return updated;
     });
   };
@@ -356,6 +409,25 @@ export default function ResultPage() {
 
       // Save data to localStorage
       localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
+      
+      // Update recent results in dashboard
+      try {
+        const email = session?.user?.email;
+        if (email) {
+          const existing = localStorage.getItem(`recentResults_${email}`);
+          let recentResults = existing ? JSON.parse(existing) : [];
+          
+          // Find and update the most recent result
+          if (recentResults.length > 0) {
+            recentResults[0].resultData = resumeData;
+            recentResults[0].timestamp = new Date().toISOString();
+            localStorage.setItem(`recentResults_${email}`, JSON.stringify(recentResults));
+          }
+        }
+      } catch (updateError) {
+        console.error('Error updating recent results:', updateError);
+        // Don't fail the save operation if recent results update fails
+      }
       
       // Simulate a small delay for better UX
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -461,6 +533,28 @@ export default function ResultPage() {
             Resume Editor
         </h1>
           <p className="text-gray-600 text-lg">Customize your AI-generated resume</p>
+          
+          {/* Auto-save Status */}
+          <div className="flex items-center justify-center gap-2 mt-4">
+            {autoSaveStatus === "saving" && (
+              <div className="flex items-center gap-2 text-blue-600">
+                <div className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
+                <span className="text-sm font-medium">Saving...</span>
+              </div>
+            )}
+            {autoSaveStatus === "saved" && (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">All changes saved</span>
+              </div>
+            )}
+            {autoSaveStatus === "error" && (
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Save failed</span>
+              </div>
+            )}
+          </div>
           
           {/* Back Button */}
           <motion.button
