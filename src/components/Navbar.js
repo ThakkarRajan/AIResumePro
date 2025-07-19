@@ -89,7 +89,7 @@ export default function Navbar() {
               <div className="hidden sm:block">
                 <Image
                   src="/Iloveresumelogotext.png"
-                  alt="I Love Resume Logo"
+                                      alt="I Love Resumes Logo"
                   width={200}
                   height={40}
                   className="h-8 object-contain"
@@ -108,7 +108,7 @@ export default function Navbar() {
                 <div className="flex flex-col  gap-2">
                   <Image
                     src="/Iloveresumelogotext.png"
-                    alt="I Love Resume Logo"
+                    alt="I Love Resumes Logo"
                     width={150}
                     height={30}
                     className="h-6 object-contain"

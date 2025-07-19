@@ -62,29 +62,34 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-6 sm:mb-8"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12 lg:mb-16"
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
               <Image
                 src="/logo.png"
-                alt="I Love Resume Logo"
-                width={60}
-                height={60}
+                alt="I Love Resumes Logo"
+                width={80}
+                height={80}
                 priority
-                className="relative z-10 rounded-2xl sm:w-20 sm:h-20"
+                className="relative z-10 rounded-3xl shadow-2xl sm:w-24 sm:h-24 lg:w-28 lg:h-28 transition-transform duration-300 group-hover:scale-105"
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
               <Image
                 src="/Iloveresumelogotext.png"
-                alt="I Love Resume Logo"
-                width={200}
-                height={60}
+                alt="I Love Resumes Logo"
+                width={250}
+                height={70}
                 priority
-                className="h-12 sm:h-16 md:h-20 object-contain"
+                className="h-14 sm:h-18 md:h-20 lg:h-24 object-contain drop-shadow-lg"
+                style={{ width: "auto", height: "auto" }}
               />
-              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 animate-pulse" />
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-white/20">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500 animate-pulse" />
+                <span className="text-sm sm:text-base font-medium text-gray-700">AI-Powered</span>
+              </div>
             </div>
           </motion.div>
 
@@ -263,7 +268,7 @@ export default function Home() {
         >
           <div className="bg-white/40 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg">
             <p className="text-gray-600">
-              © {new Date().getFullYear()} I Love Resume · Built with ❤️ by{" "}
+              © {new Date().getFullYear()} I Love Resumes · Built with ❤️ by{" "}
               <span className="font-semibold text-blue-600">Rajan</span>
             </p>
           </div>

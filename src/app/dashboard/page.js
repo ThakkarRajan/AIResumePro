@@ -78,7 +78,7 @@ export default function Dashboard() {
     if (status === "unauthenticated") router.push("/");
   }, [status]);
 
-  useEffect(() => {
+  useEffect(() => { 
     if (status === "authenticated") {
       fetchUploadedResumes();
       loadRecentResults();
@@ -718,7 +718,7 @@ export default function Dashboard() {
             className="text-center relative z-10 max-w-md mx-auto px-6"
           >
             {/* Enhanced Logo and Brand */}
-            <motion.div 
+                        <motion.div
               initial={{ opacity: 0, y: -30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
@@ -728,7 +728,7 @@ export default function Dashboard() {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
                 <Image
                   src="/logo.png"
-                  alt="I Love Resume Logo"
+                  alt="I Love Resumes Logo"
                   width={100}
                   height={100}
                   priority
@@ -822,7 +822,7 @@ export default function Dashboard() {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
                 <Image
                   src="/logo.png"
-                  alt="I Love Resume Logo"
+                  alt="I Love Resumes Logo"
                   width={100}
                   height={100}
                   priority
@@ -833,7 +833,7 @@ export default function Dashboard() {
               <div className="flex flex-col items-center gap-3">
                 <Image
                   src="/Iloveresumelogotext.png"
-                  alt="I Love Resume Logo"
+                  alt="I Love Resumes Logo"
                   width={300}
                   height={80}
                   priority
