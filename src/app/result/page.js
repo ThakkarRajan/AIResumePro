@@ -3,9 +3,33 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import toast from "react-hot-toast";
-
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  User,
+  Mail,
+  MapPin,
+  Globe,
+  Phone,
+  Github,
+  Linkedin,
+  FileText,
+  Briefcase,
+  GraduationCap,
+  Award,
+  Code,
+  Save,
+  Download,
+  Plus,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Sparkles,
+  Edit3,
+  Trash2,
+  ArrowLeft,
+  Star
+} from "lucide-react";
 
 export default function ResultPage() {
   const [resumeData, setResumeData] = useState(null);
@@ -14,6 +38,7 @@ export default function ResultPage() {
   const { data: session, status } = useSession();
   const [fieldErrors, setFieldErrors] = useState({});
   const [showSavePopup, setShowSavePopup] = useState(false);
+  const [activeSection, setActiveSection] = useState("personal");
 
   // ✅ Always call hooks before any conditionals
   useEffect(() => {
@@ -41,11 +66,6 @@ export default function ResultPage() {
     }
   }, [status, router]);
 
-  // useEffect(() => {
-  //   if (resumeData) {
-  //     localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
-  //   }
-  // }, [resumeData]);
   useEffect(() => {
     const handleRouteChange = () => {
       setShowSavePopup(false);
@@ -61,11 +81,20 @@ export default function ResultPage() {
   // ✅ Rendering logic AFTER hooks
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black text-white">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-lg font-medium">Checking session...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="relative w-20 h-20 mb-6">
+            <div className="w-20 h-20 border-4 border-purple-200/20 border-t-purple-500 rounded-full animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Sparkles className="w-8 h-8 text-purple-400 animate-pulse" />
+            </div>
         </div>
+          <p className="text-gray-600 font-medium text-lg">Loading your resume...</p>
+        </motion.div>
       </div>
     );
   }
@@ -74,6 +103,7 @@ export default function ResultPage() {
     router.push("/");
     return null;
   }
+
   const validateResume = () => {
     const errors = {};
     const errorSections = new Set();
@@ -134,7 +164,7 @@ export default function ResultPage() {
       });
     }
 
-    // Project validation (your existing good logic)
+    // Project validation
     if (Array.isArray(resumeData.projects)) {
       resumeData.projects.forEach((proj, index) => {
         if (!proj.title) {
@@ -208,6 +238,7 @@ export default function ResultPage() {
       return updated;
     });
   };
+
   const handleSave = () => {
     const valid = validateResume();
     if (!valid) return;
@@ -220,104 +251,311 @@ export default function ResultPage() {
     if (!valid) return;
 
     localStorage.setItem("tailoredResume", JSON.stringify(resumeData));
-
-    // ✅ No popup! Directly go to download page
     router.push("/word-download");
   };
 
+  const getContactIcon = (key) => {
+    const icons = {
+      email: Mail,
+      phone: Phone,
+      location: MapPin,
+      website: Globe,
+      github: Github,
+      linkedin: Linkedin
+    };
+    return icons[key] || Mail;
+  };
+
+  const sections = [
+    { id: "personal", label: "Personal Info", icon: User },
+    { id: "summary", label: "Summary", icon: FileText },
+    { id: "skills", label: "Skills", icon: Star },
+    { id: "experience", label: "Experience", icon: Briefcase },
+    { id: "education", label: "Education", icon: GraduationCap },
+    { id: "projects", label: "Projects", icon: Code },
+    { id: "certificates", label: "Certificates", icon: Award }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-100 py-12 px-4 sm:px-6 lg:px-8">
-      <Toaster position="top-center" reverseOrder={false} />
-      <div className="max-w-5xl mx-auto bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-10">
-        <h1 className="text-3xl font-extrabold text-center text-purple-700 mb-10">
-          ✨ Tailored Resume Editor
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/10 to-pink-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            borderRadius: '12px',
+          },
+        }}
+      />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl mb-6 shadow-lg">
+            <Edit3 className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+            Resume Editor
         </h1>
+          <p className="text-gray-600 text-lg">Customize your AI-generated resume</p>
+          
+          {/* Back Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push("/dashboard")}
+            className="mt-6 inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-gray-700 px-4 py-2 rounded-xl border border-white/20 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </motion.button>
+        </motion.div>
 
         {error && (
-          <p className="text-red-500 text-center text-lg font-semibold">
-            {error}
-          </p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+              <p className="text-red-800 font-medium">{error}</p>
+            </div>
+          </motion.div>
         )}
 
         {!error && resumeData && (
-          <div className="space-y-10 text-gray-800 text-sm sm:text-base">
-            <section>
-              <label className="block font-semibold text-lg mb-2">
-                👤 Name:
+          <div className="grid lg:grid-cols-4 gap-8">
+            {/* Sidebar Navigation */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="lg:col-span-1"
+            >
+              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-6 sticky top-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Sections</h3>
+                <div className="space-y-2">
+                  {sections.map((section) => {
+                    const Icon = section.icon;
+                    return (
+                      <motion.button
+                        key={section.id}
+                        whileHover={{ x: 4 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setActiveSection(section.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
+                          activeSection === section.id
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span className="font-medium">{section.label}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-8 space-y-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSave}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Save className="w-5 h-5" />
+                    Save Resume
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDownload}
+                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-5 h-5" />
+                    Download
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Main Content */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="lg:col-span-3"
+            >
+              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-8">
+                <AnimatePresence mode="wait">
+                  {/* Personal Info Section */}
+                  {activeSection === "personal" && (
+                    <motion.div
+                      key="personal"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                          <User className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-semibold text-gray-900">Personal Information</h2>
+                          <p className="text-gray-500">Update your contact details</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name
               </label>
               <input
                 value={resumeData.name || ""}
                 onChange={(e) => handleChange("name", null, e.target.value)}
-                className="w-full border px-4 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-300"
-              />
-            </section>
+                                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                             placeholder="Enter your full name"
+                          />
+                        </div>
 
-            <section>
-              <h2 className="font-semibold text-lg mb-2">📍 Contact:</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {Object.entries(resumeData.contact || {}).map(([key, val]) => (
+                        {Object.entries(resumeData.contact || {}).map(([key, val]) => {
+                          const Icon = getContactIcon(key);
+                          return (
                   <div key={key}>
-                    <label className="block text-sm capitalize mb-1">
+                              <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
                       {key}
                     </label>
+                              <div className="relative">
+                                <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       value={val}
-                      onChange={(e) =>
-                        handleChange("contact", key, e.target.value)
-                      }
-                      className="w-full border px-4 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-300"
+                                  onChange={(e) => handleChange("contact", key, e.target.value)}
+                                                                     className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                                   placeholder={`Enter your ${key}`}
                     />
                   </div>
-                ))}
-              </div>
-            </section>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
 
-            <section>
-              <label className="font-semibold text-lg mb-2">📝 Summary:</label>
+                  {/* Summary Section */}
+                  {activeSection === "summary" && (
+                    <motion.div
+                      key="summary"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-semibold text-gray-900">Professional Summary</h2>
+                          <p className="text-gray-500">Write a compelling summary of your experience</p>
+                        </div>
+              </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Summary
+                        </label>
               <textarea
                 value={resumeData.tailored_summary || ""}
-                onChange={(e) =>
-                  handleChange("tailored_summary", null, e.target.value)
-                }
-                className="w-full border px-4 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-300"
+                          onChange={(e) => handleChange("tailored_summary", null, e.target.value)}
+                                                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
+                           rows={6}
+                           placeholder="Write a compelling professional summary..."
               />
-            </section>
+                      </div>
+                    </motion.div>
+                  )}
 
-            <section>
-              <h2 className="font-semibold text-lg mb-2">🧠 Skills:</h2>
-              {Object.entries(resumeData.tailored_skills || {}).map(
-                ([category, skills]) => (
-                  <div key={category} className="mb-3">
-                    <label className="block mb-1">{category}</label>
+                  {/* Skills Section */}
+                  {activeSection === "skills" && (
+                    <motion.div
+                      key="skills"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center">
+                          <Star className="w-6 h-6 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-semibold text-gray-900">Skills & Expertise</h2>
+                          <p className="text-gray-500">Organize your skills by category</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        {Object.entries(resumeData.tailored_skills || {}).map(([category, skills]) => (
+                          <div key={category} className="bg-gray-50 rounded-xl p-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+                              {category}
+                            </label>
                     <input
                       value={skills.join(", ")}
-                      onChange={(e) =>
-                        handleChange(
-                          "tailored_skills",
-                          category,
-                          e.target.value
-                        )
-                      }
-                      className="w-full border px-4 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-300"
+                              onChange={(e) => handleChange("tailored_skills", category, e.target.value)}
+                                                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                               placeholder={`Enter ${category} skills separated by commas`}
                     />
                   </div>
-                )
-              )}
-            </section>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
 
-            {Array.isArray(resumeData.tailored_experience) &&
-              resumeData.tailored_experience.length > 0 && (
-                <section>
-                  <div className="flex justify-between items-center mb-2">
-                    <h2 className="font-semibold text-lg">💼 Experience</h2>
-                    <button
+                  {/* Experience Section */}
+                  {activeSection === "experience" && (
+                    <motion.div
+                      key="experience"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
+                            <Briefcase className="w-6 h-6 text-green-600" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-semibold text-gray-900">Work Experience</h2>
+                            <p className="text-gray-500">Manage your professional experience</p>
+                          </div>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                       onClick={() =>
                         setResumeData((prev) => ({
                           ...prev,
                           tailored_experience: [
-                            ...(Array.isArray(prev.tailored_experience)
-                              ? prev.tailored_experience
-                              : []),
+                                ...(Array.isArray(prev.tailored_experience) ? prev.tailored_experience : []),
                             {
                               company: "",
                               title: "",
@@ -329,34 +567,25 @@ export default function ResultPage() {
                           ],
                         }))
                       }
-                      className="inline-flex items-center gap-2 bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-md transition-transform duration-300 hover:scale-105"
+                          className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                      <span className="text-sm font-semibold">
+                          <Plus className="w-4 h-4" />
                         Add Experience
-                      </span>
-                    </button>
+                        </motion.button>
                   </div>
 
-                  {resumeData.tailored_experience.map((exp, idx) => (
-                    <div
+                      <div className="space-y-6">
+                        {Array.isArray(resumeData.tailored_experience) &&
+                          resumeData.tailored_experience.map((exp, idx) => (
+                            <motion.div
                       key={idx}
-                      className="relative mb-6 p-4 bg-gray-50 rounded-lg shadow-sm space-y-2"
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="relative bg-gray-50 rounded-2xl p-6 border border-gray-200"
                     >
-                      <button
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                         onClick={() =>
                           setResumeData((prev) => {
                             const updated = [...prev.tailored_experience];
@@ -364,20 +593,22 @@ export default function ResultPage() {
                             return { ...prev, tailored_experience: updated };
                           })
                         }
-                        className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full hover:bg-red-600 shadow"
-                        title="Remove"
+                                className="absolute -top-2 -right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-lg transition-all duration-200"
+                                title="Remove experience"
                       >
-                        ✖
-                      </button>
+                                <Trash2 className="w-4 h-4" />
+                              </motion.button>
 
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {Object.entries(exp).map(([key, val]) => (
                         <div key={key}>
-                          <label className="block text-sm font-medium capitalize mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
                             {key}
                           </label>
                           {key === "highlights" ? (
                             <textarea
-                              className="w-full border px-4 py-2 rounded-lg"
+                                                                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
+                                         rows={4}
                               value={Array.isArray(val) ? val.join("\n") : val}
                               onChange={(e) =>
                                 handleChange(
@@ -385,25 +616,21 @@ export default function ResultPage() {
                                   key,
                                   e.target.value
                                     .split("\n")
-                                    .map((item) => item.trim()) // 🛠 Trim spaces on each line!
-                                    .filter((item) => item.length > 0), // 🛠 Optional: remove empty lines
+                                              .map((item) => item.trim())
+                                              .filter((item) => item.length > 0),
                                   idx
                                 )
                               }
+                                        placeholder="Enter job highlights (one per line)"
                             />
                           ) : (
                             <input
                               value={val}
                               onChange={(e) =>
-                                handleChange(
-                                  "tailored_experience",
-                                  key,
-                                  e.target.value,
-                                  idx
-                                )
+                                          handleChange("tailored_experience", key, e.target.value, idx)
                               }
-                              className="w-full border px-4 py-2 rounded-lg"
-                              placeholder={key}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                                        placeholder={`Enter ${key}`}
                             />
                           )}
                           {fieldErrors[`experience_${key}_${idx}`] && (
@@ -414,59 +641,69 @@ export default function ResultPage() {
                         </div>
                       ))}
                     </div>
+                            </motion.div>
                   ))}
-                </section>
+                      </div>
+                    </motion.div>
               )}
 
-            <section>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="font-semibold text-lg">🎓 Education</h2>
-                <button
+                  {/* Education Section */}
+                  {activeSection === "education" && (
+                    <motion.div
+                      key="education"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center">
+                            <GraduationCap className="w-6 h-6 text-indigo-600" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-semibold text-gray-900">Education</h2>
+                            <p className="text-gray-500">Add your educational background</p>
+                          </div>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                   onClick={() =>
                     setResumeData((prev) => ({
                       ...prev,
                       education: [
-                        ...(Array.isArray(prev.education)
-                          ? prev.education
-                          : []),
+                                ...(Array.isArray(prev.education) ? prev.education : []),
                         {
                           program: "",
                           school: "",
                           location: "",
                           start: "",
                           end: "",
+                                  highlights: ["", ""],
                         },
                       ],
                     }))
                   }
-                  className="inline-flex items-center gap-2 bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-md transition-transform duration-300 hover:scale-105"
+                          className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  <span className="text-sm font-semibold">Add Education</span>
-                </button>
+                          <Plus className="w-4 h-4" />
+                          Add Education
+                        </motion.button>
               </div>
 
+                      <div className="space-y-6">
               {Array.isArray(resumeData.education) &&
-              resumeData.education.length > 0 ? (
                 resumeData.education.map((edu, idx) => (
-                  <div
+                            <motion.div
                     key={idx}
-                    className="relative mb-6 p-4 bg-gray-50 rounded-lg shadow-sm space-y-3"
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="relative bg-gray-50 rounded-2xl p-6 border border-gray-200"
                   >
-                    <button
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                       onClick={() =>
                         setResumeData((prev) => {
                           const updated = [...prev.education];
@@ -474,31 +711,46 @@ export default function ResultPage() {
                           return { ...prev, education: updated };
                         })
                       }
-                      className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full hover:bg-red-600 shadow"
-                      title="Remove"
+                                className="absolute -top-2 -right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-lg transition-all duration-200"
+                                title="Remove education"
                     >
-                      ✖
-                    </button>
+                                <Trash2 className="w-4 h-4" />
+                              </motion.button>
 
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Object.entries(edu).map(([key, val]) => (
-                      <div key={key}>
-                        <label className="block text-sm font-medium capitalize mb-1">
+                                  <div key={key} className={key === "highlights" ? "md:col-span-2" : ""}>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
                           {key}
                         </label>
-                        <input
-                          type="text"
-                          value={val}
+                                    {key === "highlights" ? (
+                                      <textarea
+                                        value={Array.isArray(val) ? val.join("\n") : val}
                           onChange={(e) =>
                             handleInputChange(
                               "education",
                               idx,
                               key,
                               e.target.value
+                                              .split("\n")
+                                              .map((item) => item.trim())
+                                              .filter((item) => item.length > 0)
                             )
                           }
-                          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
-                          placeholder={key}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
+                                        rows={4}
+                                        placeholder="Enter education highlights/achievements (one per line)"
+                                      />
+                                    ) : (
+                                      <input
+                                        value={val}
+                                        onChange={(e) =>
+                                          handleInputChange("education", idx, key, e.target.value)
+                                        }
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                                        placeholder={`Enter ${key}`}
                         />
+                                    )}
                         {fieldErrors[`education_${key}_${idx}`] && (
                           <p className="text-red-500 text-xs mt-1">
                             {fieldErrors[`education_${key}_${idx}`]}
@@ -507,47 +759,39 @@ export default function ResultPage() {
                       </div>
                     ))}
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No education data available.
-                </p>
-              )}
-            </section>
-
-            {Array.isArray(resumeData.tailored_certificates) &&
-              resumeData.tailored_certificates.length > 0 && (
-                <section>
-                  <h2 className="font-semibold text-lg mb-2">
-                    📜 Certificates:
-                  </h2>
-                  <textarea
-                    value={resumeData.tailored_certificates.join("\n")}
-                    onChange={(e) =>
-                      handleChange(
-                        "tailored_certificates",
-                        "certs",
-                        e.target.value
-                      )
-                    }
-                    className="w-full border px-4 py-2 rounded-lg shadow-sm"
-                  />
-                </section>
+                            </motion.div>
+                          ))}
+                      </div>
+                    </motion.div>
               )}
 
-            {Array.isArray(resumeData.projects) &&
-              resumeData.projects.length > 0 && (
-                <section>
-                  <div className="flex justify-between items-center mb-2">
-                    <h2 className="font-semibold text-lg">🚀 Projects</h2>
-                    <button
+                  {/* Projects Section */}
+                  {activeSection === "projects" && (
+                    <motion.div
+                      key="projects"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center">
+                            <Code className="w-6 h-6 text-orange-600" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-semibold text-gray-900">Projects</h2>
+                            <p className="text-gray-500">Showcase your projects and achievements</p>
+                          </div>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                       onClick={() =>
                         setResumeData((prev) => ({
                           ...prev,
                           projects: [
-                            ...(Array.isArray(prev.projects)
-                              ? prev.projects
-                              : []),
+                                ...(Array.isArray(prev.projects) ? prev.projects : []),
                             {
                               title: "",
                               tech: [],
@@ -556,34 +800,25 @@ export default function ResultPage() {
                           ],
                         }))
                       }
-                      className="inline-flex items-center gap-2 bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-md transition-transform duration-300 hover:scale-105"
+                          className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                      <span className="text-sm font-semibold">
-                        Add Projects
-                      </span>
-                    </button>
+                          <Plus className="w-4 h-4" />
+                          Add Project
+                        </motion.button>
                   </div>
 
-                  {resumeData.projects.map((proj, idx) => (
-                    <div
+                      <div className="space-y-6">
+                        {Array.isArray(resumeData.projects) &&
+                          resumeData.projects.map((proj, idx) => (
+                            <motion.div
                       key={idx}
-                      className="relative mb-4 p-4 bg-gray-50 rounded-lg shadow-sm space-y-2"
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="relative bg-gray-50 rounded-2xl p-6 border border-gray-200"
                     >
-                      <button
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                         onClick={() =>
                           setResumeData((prev) => {
                             const updated = [...prev.projects];
@@ -591,107 +826,137 @@ export default function ResultPage() {
                             return { ...prev, projects: updated };
                           })
                         }
-                        className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full hover:bg-red-600 shadow"
-                        title="Remove"
+                                className="absolute -top-2 -right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-lg transition-all duration-200"
+                                title="Remove project"
                       >
-                        ✖
-                      </button>
+                                <Trash2 className="w-4 h-4" />
+                              </motion.button>
 
+                              <div className="space-y-4">
                       {Object.entries(proj).map(([key, val]) => (
                         <div key={key}>
-                          <label className="block text-sm font-medium capitalize mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
                             {key}
                           </label>
                           {key === "highlights" ? (
-                            <input
-                              value={Array.isArray(val) ? val.join(", ") : val}
+                                      <textarea
+                                        value={Array.isArray(val) ? val.join("\n") : val}
                               onChange={(e) =>
                                 handleChange(
                                   "projects",
                                   key,
                                   e.target.value
-                                    .split(",")
-                                    .map((item) => item.trim()),
+                                              .split("\n")
+                                              .map((item) => item.trim())
+                                              .filter((item) => item.length > 0),
                                   idx
                                 )
                               }
-                              className="w-full border px-4 py-2 rounded-lg"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
+                                        rows={4}
+                                        placeholder="Enter project highlights (one per line)"
                             />
                           ) : (
                             <input
                               value={val}
                               onChange={(e) =>
-                                handleChange(
-                                  "projects",
-                                  key,
-                                  e.target.value,
-                                  idx
-                                )
+                                          handleChange("projects", key, e.target.value, idx)
                               }
-                              className="w-full border px-4 py-2 rounded-lg"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
+                                        placeholder={`Enter ${key}`}
                             />
                           )}
-
-                          {key === "title" &&
-                            fieldErrors[`project_title_${idx}`] && (
+                                    {fieldErrors[`project_${key}_${idx}`] && (
                               <p className="text-red-500 text-xs mt-1">
-                                {fieldErrors[`project_title_${idx}`]}
-                              </p>
-                            )}
-                          {key === "tech" &&
-                            fieldErrors[`project_tech_${idx}`] && (
-                              <p className="text-red-500 text-xs mt-1">
-                                {fieldErrors[`project_tech_${idx}`]}
-                              </p>
-                            )}
-                          {key === "highlights" &&
-                            fieldErrors[`project_highlights_${idx}`] && (
-                              <p className="text-red-500 text-xs mt-1">
-                                {fieldErrors[`project_highlights_${idx}`]}
+                                        {fieldErrors[`project_${key}_${idx}`]}
                               </p>
                             )}
                         </div>
                       ))}
                     </div>
+                            </motion.div>
                   ))}
-                </section>
+                      </div>
+                    </motion.div>
               )}
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
-              <button
-                onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl transition-all"
-              >
-                💾 Save Resume
-              </button>
-              <button
-                onClick={handleDownload}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all"
-              >
-                ⬇️ Download as Word Or PDF
-              </button>
+                  {/* Certificates Section */}
+                  {activeSection === "certificates" && (
+                    <motion.div
+                      key="certificates"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center">
+                          <Award className="w-6 h-6 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-semibold text-gray-900">Certificates</h2>
+                          <p className="text-gray-500">List your professional certifications</p>
+                        </div>
+                      </div>
+
+                      {Array.isArray(resumeData.tailored_certificates) &&
+                        resumeData.tailored_certificates.length > 0 && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Certificates
+                            </label>
+                            <textarea
+                              value={resumeData.tailored_certificates.join("\n")}
+                              onChange={(e) =>
+                                handleChange("tailored_certificates", "certs", e.target.value)
+                              }
+                              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 placeholder-gray-500"
+                              rows={6}
+                              placeholder="Enter your certificates (one per line)"
+                            />
+                          </div>
+                        )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
             </div>
+            </motion.div>
           </div>
         )}
       </div>
+
+      {/* Save Success Popup */}
+      <AnimatePresence>
       {showSavePopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white rounded-2xl p-8 shadow-xl text-center">
-            <h2 className="text-2xl font-bold mb-4 text-green-600">
-              Resume Saved!
-            </h2>
-            <p className="mb-6 text-gray-700">
-              Your changes were saved successfully.
-            </p>
-            <button
-              onClick={() => setShowSavePopup(false)}
-              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 shadow-2xl text-center max-w-md mx-4"
             >
-              OK
-            </button>
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-        </div>
+              <h2 className="text-2xl font-bold mb-2 text-gray-900">Resume Saved!</h2>
+              <p className="text-gray-600 mb-6">Your changes have been saved successfully.</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowSavePopup(false)}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                Continue Editing
+              </motion.button>
+            </motion.div>
+          </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
